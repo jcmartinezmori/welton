@@ -5,9 +5,13 @@ import pandas as pd
 import time
 import plotly.graph_objects as go
 import subprocess
+import requests
+import os
+import signal
+from src.config import *
 
 
-def generate_otp_gtfs(**kwargs):
+def edit_otp_gtfs(**kwargs):
 
     tau = kwargs.get('tau', None)
     delta = kwargs.get('delta', None)
@@ -35,27 +39,25 @@ def generate_otp_gtfs(**kwargs):
                 )
 
 
-def wait_for_otp(
-    process: subprocess.Popen,
-    timeout: float = 120,
-) -> None:
-    """Wait until the OTP GraphQL API is ready."""
+def wait_for_otp(process: subprocess.Popen, timeout: float = 120) -> None:
 
     deadline = time.monotonic() + timeout
 
     while time.monotonic() < deadline:
-        # Detect OTP crashing during startup.
+
         return_code = process.poll()
 
         if return_code is not None:
+
             raise RuntimeError(
-                f"OTP exited during startup with code {return_code}"
+                f'OTP exited during startup with code {return_code}'
             )
 
         try:
+
             response = requests.post(
                 OTP_URL,
-                json={"query": "{ __typename }"},
+                json={'query': '{ __typename }'},
                 timeout=2,
             )
 
@@ -68,20 +70,27 @@ def wait_for_otp(
         time.sleep(1)
 
     raise TimeoutError(
-        f"OTP did not become ready within {timeout} seconds"
+        f'OTP did not become ready within {timeout} seconds'
     )
 
 
 def stop_otp(process: subprocess.Popen) -> None:
-    """Stop OTP cleanly, killing it if necessary."""
 
     if process.poll() is not None:
         return
 
-    process.terminate()
+    process_group_id = os.getpgid(process.pid)
+
+    os.killpg(
+        process_group_id,
+        signal.SIGTERM,
+    )
 
     try:
         process.wait(timeout=15)
     except subprocess.TimeoutExpired:
-        process.kill()
+        os.killpg(
+            process_group_id,
+            signal.SIGKILL,
+        )
         process.wait()

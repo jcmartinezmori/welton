@@ -1,8 +1,10 @@
+from pathlib import Path
+
 CWD = '/Users/jcmartinezmori/Desktop/github/welton'
 
 DATE = '2026-03-24'
 
-QUERY_COORDINATES = {
+OTP_COORDINATES = {
     '16th & Stout': (39.746080362466564, -104.99292078083685),
     'Union Station': (39.752972760202766, -104.99992340468313),
     '27th & Welton': (39.75522805291108, -104.97725395645433),
@@ -19,3 +21,7 @@ STATION_IDS = {
     '30th & Downing': 23051
 
 }
+
+# ---------- OTP ---------- #
+OTP_URL = "http://localhost:8080/otp/gtfs/v1"
+LAYER_SCRIPT = Path('src/layer_otp.sh')

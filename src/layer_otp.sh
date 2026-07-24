@@ -9,6 +9,6 @@ java -Xmx2G -jar "$OTP_JAR" \
   --save \
   "$OTP_DIR"
 
-java -Xmx2G -jar "$OTP_JAR" \
+exec java -Xmx2G -jar "$OTP_JAR" \
   --load \
   "$OTP_DIR"

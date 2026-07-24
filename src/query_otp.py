@@ -3,7 +3,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 
-def get_otp_duration(
+def get_duration(
     from_coords,
     to_coords,
     date,
