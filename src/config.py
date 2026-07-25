@@ -2,7 +2,7 @@ from pathlib import Path
 
 CWD = '/Users/jcmartinezmori/Desktop/github/welton'
 
-DATE = '2026-03-24'
+DATE = '2026-03-27'
 
 OTP_COORDINATES = {
     '16th & Stout': (39.746080362466564, -104.99292078083685),

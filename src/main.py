@@ -1,10 +1,11 @@
+import itertools as it
+
 import pandas as pd
 import time
 import plotly.graph_objects as go
 import subprocess
 from src.helper import *
 from src.config import *
-from src.query_otp import *
 
 
 def get_durations(origin, destination, query_times, **kwargs):
@@ -21,7 +22,7 @@ def get_durations(origin, destination, query_times, **kwargs):
     durations = []
     for query_time in query_times:
 
-        duration = get_duration(origin_coords, destination_coords, date, query_time) / 60
+        duration = get_duration(origin_coords, destination_coords, date, query_time)
         durations.append((tau, delta, origin, destination, query_time, duration))
 
         print(f'        query_time: {query_time}, duration: {duration}')
@@ -53,47 +54,51 @@ if __name__ == '__main__':
 
     data = []
 
-    for tau in taus:
-        for delta in deltas:
+    tau_delta_pairs = [pair for pair in it.product(taus, deltas)]
+    tau_delta_pairs.append((None, None))
 
-            print(f"tau: {tau}, delta: {delta}")
-            print("     ... Generating OTP")
+    for tau, delta in tau_delta_pairs:
 
-            edit_otp_gtfs(tau=tau, delta=delta)
+        print(f"tau: {tau}, delta: {delta}")
+        print("     ... Generating OTP")
 
-            log_path = Path(f'output/otp/log/otp_{tau}_{delta}.log')
-            log_path.parent.mkdir(parents=True, exist_ok=True)
+        edit_otp_gtfs(tau=tau, delta=delta)
 
-            with log_path.open('w') as otp_log:
+        log_path = Path(f'output/otp/log/otp_{tau}_{delta}.log')
+        log_path.parent.mkdir(parents=True, exist_ok=True)
 
-                otp_process = subprocess.Popen(
-                    ['bash', str(LAYER_SCRIPT)],
-                    stdout=otp_log,
-                    stderr=subprocess.STDOUT,
-                    start_new_session=True
-                )
+        with log_path.open('w') as otp_log:
 
-                try:
+            otp_process = subprocess.Popen(
+                ['bash', str(LAYER_SCRIPT)],
+                stdout=otp_log,
+                stderr=subprocess.STDOUT,
+                start_new_session=True
+            )
 
-                    print("     ... Waiting for OTP")
-                    wait_for_otp(otp_process)
+            try:
 
-                    print("     ... Querying OTP")
-                    for origin, destination in origin_destination_pairs:
+                print("     ... Waiting for OTP")
+                wait_for_otp(otp_process)
 
-                        durations = get_durations(
-                            origin,
-                            destination,
-                            query_times,
-                        )
+                print("     ... Querying OTP")
+                for origin, destination in origin_destination_pairs:
 
-                        data.extend(durations)
+                    durations = get_durations(
+                        origin,
+                        destination,
+                        query_times,
+                        tau=tau,
+                        delta=delta
+                    )
 
-                        df = pd.DataFrame(
-                            data, columns=['tau', 'delta', 'origin', 'destination', 'query_time', 'duration']
-                        )
-                        df.to_csv(Path('output/durations/durations.csv'), index=False)
+                    data.extend(durations)
 
-                finally:
-                    print("     ... Stopping OTP")
-                    stop_otp(otp_process)
+                    df = pd.DataFrame(
+                        data, columns=['tau', 'delta', 'origin', 'destination', 'query_time', 'duration']
+                    )
+                    df.to_csv(Path('output/durations/durations.csv'), index=False)
+
+            finally:
+                print("     ... Stopping OTP")
+                stop_otp(otp_process)

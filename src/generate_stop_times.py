@@ -1,5 +1,6 @@
 import pandas as pd
 from src.config import *
+from pathlib import Path
 
 
 def generate_stop_times(tau, delta, **kwargs):
@@ -7,8 +8,8 @@ def generate_stop_times(tau, delta, **kwargs):
     route_id = kwargs.get('route_id', ROUTE_ID)
     service_id = kwargs.get('service_id', SERVICE_ID)
 
-    trips_df = pd.read_csv(CWD + '/input/gtfs/trips.txt')
-    stop_times_df = pd.read_csv(CWD + '/input/gtfs/stop_times.txt')
+    trips_df = pd.read_csv(Path('input/gtfs/trips.txt'))
+    stop_times_df = pd.read_csv(Path('input/gtfs/stop_times.txt'))
 
     new_stop_times_df = stop_times_df.copy()
 
@@ -74,10 +75,28 @@ def generate_stop_times(tau, delta, **kwargs):
                 )
             )
 
+            arrival_time = pd.to_datetime(
+                new_stop_times_df.loc[trip_direction_route_stop_times_df.index, 'arrival_time'],
+                format="%H:%M:%S",
+                errors="coerce"
+            )
+            departure_time = pd.to_datetime(
+                new_stop_times_df.loc[trip_direction_route_stop_times_df.index, 'departure_time'],
+                format="%H:%M:%S",
+                errors="coerce"
+            )
+
+            new_stop_times_df.loc[trip_direction_route_stop_times_df.index, 'arrival_time'] = (
+                    arrival_time + pd.Timedelta(minutes=delta)
+            ).dt.strftime("%H:%M:%S")
+            new_stop_times_df.loc[trip_direction_route_stop_times_df.index, 'departure_time'] = (
+                    departure_time + pd.Timedelta(minutes=delta)
+            ).dt.strftime("%H:%M:%S")
+
     data_df = pd.DataFrame(data, columns=new_stop_times_df.columns)
     new_stop_times_df = pd.concat([new_stop_times_df, data_df], ignore_index=True)
     new_stop_times_df = new_stop_times_df.sort_values(by=['trip_id', 'stop_sequence'])
-    new_stop_times_df.to_csv(CWD + f'/output/stop_times/{tau}_{delta}_stop_times.txt', index=False)
+    new_stop_times_df.to_csv(Path(f'output/stop_times/{tau}_{delta}_stop_times.txt'), index=False)
 
 
 if __name__ == '__main__':
