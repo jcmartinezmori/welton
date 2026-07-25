@@ -15,7 +15,7 @@ from zoneinfo import ZoneInfo
 
 def edit_otp_gtfs(**kwargs):
 
-    tau = kwargs.get('tau', None)
+    kappa = kwargs.get('kappa', None)
     delta = kwargs.get('delta', None)
 
     input_gtfs_dir = Path('input/gtfs')
@@ -29,11 +29,11 @@ def edit_otp_gtfs(**kwargs):
         shutil.rmtree(output_gtfs_dir)
 
     shutil.copytree(input_gtfs_dir, output_gtfs_dir)
-    if tau is not None and delta is not None:
-        shutil.copy(Path(f'output/stop_times/{tau}_{delta}_stop_times.txt'), output_gtfs_dir / 'stop_times.txt')
+    if kappa is not None and delta is not None:
+        shutil.copy(Path(f'output/stop_times/{kappa}_{delta}_stop_times.txt'), output_gtfs_dir / 'stop_times.txt')
 
-    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
-        for file in output_gtfs_dir.rglob("*"):
+    with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for file in output_gtfs_dir.rglob('*'):
             if file.is_file():
                 zf.write(
                     file,
@@ -41,7 +41,7 @@ def edit_otp_gtfs(**kwargs):
                 )
 
 
-def wait_for_otp(process: subprocess.Popen, timeout: float = 120) -> None:
+def wait_for_otp(process: subprocess.Popen, timeout: float = 600) -> None:
 
     deadline = time.monotonic() + timeout
 
@@ -98,13 +98,15 @@ def stop_otp(process: subprocess.Popen) -> None:
         process.wait()
 
 
-def get_duration(
-        from_coords, to_coords, date, time,
-        max_transfers=2, max_walk_distance=1000, num_itineraries=50, timezone="America/Denver"
-):
+def get_itinerary(origin_coords, destination_coords, date, query_time, **kwargs):
 
-    from_lat, from_lon = from_coords
-    to_lat, to_lon = to_coords
+    max_transfers = kwargs.get('max_transfers', MAX_TRANSFERS)
+    num_itineraries = kwargs.get('num_itineraries', NUM_ITINERARIES)
+    search_window = kwargs.get('search_window', SEARCH_WINDOW)
+    time_zone = kwargs.get('time_zone', TIME_ZONE)
+
+    from_lat, from_lon = origin_coords
+    to_lat, to_lon = destination_coords
 
     query = """
     query Route(
@@ -114,6 +116,7 @@ def get_duration(
       $time: String!
       $maxTransfers: Int!
       $numItineraries: Int!
+      $searchWindow: Long!
     ) {
       plan(
         fromPlace: $fromPlace
@@ -126,6 +129,7 @@ def get_duration(
         ]
         maxTransfers: $maxTransfers
         numItineraries: $numItineraries
+        searchWindow: $searchWindow
       ) {
         routingErrors {
           code
@@ -138,25 +142,37 @@ def get_duration(
           waitingTime
           walkDistance
           numberOfTransfers
+          legs {
+            mode
+            transitLeg
+            headsign
+            route {
+              gtfsId
+              shortName
+              longName
+              mode
+            }
+          }
         }
       }
     }
     """
 
     variables = {
-        "fromPlace": f"{from_lat},{from_lon}",
-        "toPlace": f"{to_lat},{to_lon}",
-        "date": date,
-        "time": time,
-        "maxTransfers": max_transfers,
-        "numItineraries": num_itineraries,
+        'fromPlace': f'{from_lat},{from_lon}',
+        'toPlace': f'{to_lat},{to_lon}',
+        'date': date,
+        'time': query_time,
+        'maxTransfers': max_transfers,
+        'numItineraries': num_itineraries,
+        'searchWindow': search_window
     }
 
     response = requests.post(
         OTP_URL,
         json={
-            "query": query,
-            "variables": variables,
+            'query': query,
+            'variables': variables,
         },
         timeout=120,
     )
@@ -164,51 +180,30 @@ def get_duration(
 
     result = response.json()
 
-    if result.get("errors"):
+    if result.get('errors'):
         raise RuntimeError(f"OTP GraphQL error: {result['errors']}")
 
-    plan = result.get("data", {}).get("plan")
+    plan = result.get('data', {}).get('plan')
 
     if not plan:
         return None
 
-    if plan.get("routingErrors"):
+    if plan.get('routingErrors'):
         raise RuntimeError(
             f"OTP routing error: {plan['routingErrors']}"
         )
 
-    itineraries = plan.get("itineraries") or []
+    itineraries = plan.get('itineraries') or []
 
-    valid_itineraries = [
-        itinerary
-        for itinerary in itineraries
-        if itinerary.get("end") is not None
-        and itinerary.get("walkDistance") is not None
-        and itinerary.get("numberOfTransfers") is not None
-        and itinerary["walkDistance"] <= max_walk_distance
-        and itinerary["numberOfTransfers"] <= max_transfers
-    ]
-
-    if not valid_itineraries:
+    if not itineraries:
         return None
 
-    # Pick the itinerary that arrives earliest.
-    best_itinerary = min(
-        valid_itineraries,
-        key=lambda itinerary: datetime.fromisoformat(
-            itinerary["end"].replace("Z", "+00:00")
-        ),
-    )
+    itinerary = min(itineraries, key=lambda x: datetime.fromisoformat(x["end"]))
 
     query_datetime = datetime.strptime(
-        f"{date} {time}",
-        "%Y-%m-%d %H:%M:%S",
-    ).replace(
-        tzinfo=ZoneInfo(timezone)
-    )
+        f"{date} {query_time}","%Y-%m-%d %H:%M:%S"
+    ).replace(tzinfo=ZoneInfo(time_zone))
 
-    arrival_datetime = datetime.fromisoformat(
-        best_itinerary["end"].replace("Z", "+00:00")
-    )
+    itinerary['duration'] = (datetime.fromisoformat(itinerary["end"]) - query_datetime).total_seconds() / 60
 
-    return (arrival_datetime - query_datetime).total_seconds() / 60
+    return itinerary

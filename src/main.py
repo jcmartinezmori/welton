@@ -10,7 +10,7 @@ from src.config import *
 
 def get_durations(origin, destination, query_times, **kwargs):
 
-    tau = kwargs.get('tau', None)
+    kappa = kwargs.get('kappa', None)
     delta = kwargs.get('delta', None)
     date = kwargs.get('date', DATE)
 
@@ -22,8 +22,17 @@ def get_durations(origin, destination, query_times, **kwargs):
     durations = []
     for query_time in query_times:
 
-        duration = get_duration(origin_coords, destination_coords, date, query_time)
-        durations.append((tau, delta, origin, destination, query_time, duration))
+        itinerary = get_itinerary(origin_coords, destination_coords, date, query_time)
+
+        duration = itinerary['duration']
+
+        transit_legs = [leg for leg in itinerary['legs'] if leg['transitLeg']]
+        if "1:109L" in [leg["route"]["gtfsId"] for leg in transit_legs]:
+            marker = 1
+        else:
+            marker = 0
+
+        durations.append((kappa, delta, origin, destination, query_time, duration, marker))
 
         print(f'        query_time: {query_time}, duration: {duration}')
 
@@ -34,8 +43,8 @@ if __name__ == '__main__':
 
     query_times = [
         f'{hour:02d}:{minute:02d}:00'
-        for hour in range(15, 15 + 1)
-        for minute in range(60)
+        for hour in range(15, 18 + 1)
+        for minute in range(59 + 1)
     ]
 
     origin_destination_pairs = [
@@ -49,22 +58,22 @@ if __name__ == '__main__':
         ('16th & Stout', 'DIA'),
     ]
 
-    taus = [2, 3, 4]
-    deltas = [i for i in range(14)]
+    kappas = [1, 0.75]
+    deltas = [i for i in range(14 + 1)]
+
+    kappa_delta_pairs = [pair for pair in it.product(kappas, deltas)]
+    kappa_delta_pairs.append((None, None))
 
     data = []
 
-    tau_delta_pairs = [pair for pair in it.product(taus, deltas)]
-    tau_delta_pairs.append((None, None))
+    for kappa, delta in kappa_delta_pairs:
 
-    for tau, delta in tau_delta_pairs:
-
-        print(f"tau: {tau}, delta: {delta}")
+        print(f"kappa: {kappa}, delta: {delta}")
         print("     ... Generating OTP")
 
-        edit_otp_gtfs(tau=tau, delta=delta)
+        edit_otp_gtfs(kappa=kappa, delta=delta)
 
-        log_path = Path(f'output/otp/log/otp_{tau}_{delta}.log')
+        log_path = Path(f'output/otp/log/otp_{kappa}_{delta}.log')
         log_path.parent.mkdir(parents=True, exist_ok=True)
 
         with log_path.open('w') as otp_log:
@@ -88,14 +97,14 @@ if __name__ == '__main__':
                         origin,
                         destination,
                         query_times,
-                        tau=tau,
+                        kappa=kappa,
                         delta=delta
                     )
 
                     data.extend(durations)
 
                     df = pd.DataFrame(
-                        data, columns=['tau', 'delta', 'origin', 'destination', 'query_time', 'duration']
+                        data, columns=['kappa', 'delta', 'origin', 'destination', 'query_time', 'duration', 'marker']
                     )
                     df.to_csv(Path('output/durations/durations.csv'), index=False)
 
