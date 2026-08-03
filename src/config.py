@@ -10,6 +10,8 @@ STATION_IDS = {
 
 }
 TAU = 4
+KAPPA = 1
+DELTA = 0
 
 # ---------- OTP ---------- #
 DATE = '2026-03-27'
