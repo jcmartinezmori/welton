@@ -1,5 +1,5 @@
 from pathlib import Path
-
+import copy
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -132,12 +132,29 @@ def plot_trip_durations(columns, **kwargs):
             v[i] = True
         return v
 
-    fig.update_yaxes(range=[0, 80])
-    fig.update_yaxes(title_text="Trip Duration [min.]", row=1, col=1)
-    fig.update_yaxes(title_text="Trip Duration [min.]", row=2, col=1)
+    for ann in fig.layout.annotations:
+        ann.font.size = 18
 
+    fig.update_yaxes(range=[0, 82.5])
+    fig.update_yaxes(
+        title_text="Trip Duration [min.]",
+        title_font=dict(size=18),
+        tickfont=dict(size=16),
+        row=1, col=1
+    )
+    fig.update_yaxes(
+        title_text="Trip Duration [min.]",
+        title_font=dict(size=18),
+        tickfont=dict(size=16),
+        row=2, col=1
+    )
     for col in range(1, len(columns) + 1):
-        fig.update_xaxes(title_text='Query Time', row=2, col=col)
+        fig.update_xaxes(
+            title_text='Query Time',
+            title_font=dict(size=18),
+            tickfont=dict(size=16),
+            row=2, col=col
+        )
     fig.update_xaxes(
         tickformat='%H:%M',
         tickangle=45,
@@ -149,21 +166,22 @@ def plot_trip_durations(columns, **kwargs):
     fig.update_layout(
         title={
             'text': f'Trip Durations (κ: {kappa})',
-            'x': 0.5,
+            'x': 0.125,
             'xanchor': 'center',
-            'y': 0.95
+            'y': 0.98,
+            'font': {'size': 26}
         },
         margin={
             'l': 80,
             'r': 80,
-            't': 280,
+            't': 180,
             'b': 80
         },
         sliders=[
             {
                 'active': 0,
                 'x': 0.5,
-                'y': 1.275,
+                'y': 1.1,
                 'len': 0.8,
                 'xanchor': 'center',
                 'yanchor': 'bottom',
@@ -171,7 +189,7 @@ def plot_trip_durations(columns, **kwargs):
                     'prefix': 'δ: ',
                     'suffix': ' [min.]',
                     'xanchor': 'center',
-                    'font': {'size': 16},
+                    'font': {'size': 20},
                 },
                 'pad': {'t': 0, 'b': 0},
                 'steps': [
@@ -188,18 +206,41 @@ def plot_trip_durations(columns, **kwargs):
         ],
         legend={
             'orientation': 'h',
-            'x': 0.5,
-            'xanchor': 'center',
-            'y': 1.15,
+            'x': 0,
+            'xanchor': 'left',
+            'y': 1.2,
             'yanchor': 'bottom',
             'traceorder': 'normal'
         },
         hovermode="x unified",
         height=800,
-        width=max(1200, 370 * len(columns)),
+        width=1600,
     )
 
-    fig.show()
+    output_dir = Path('output/figures/')
+    output_dir.mkdir(parents=True, exist_ok=True)
+    fig.write_html(
+        output_dir / f'trip_durations_kappa_{kappa}.html',
+        include_plotlyjs="cdn",
+    )
+    for i, delta in enumerate(deltas):
+        export_fig = copy.deepcopy(fig)
+        vis = visible(delta)
+        for trace, is_visible in zip(export_fig.data, vis):
+            trace.visible = is_visible
+
+        export_fig.update_layout(
+            sliders=[
+                {
+                    **export_fig.layout.sliders[0].to_plotly_json(),
+                    "active": i,
+                }
+            ]
+        )
+        export_fig.write_image(
+            output_dir / f'trip_durations_kappa_{kappa}_delta_{delta}.pdf'
+        )
+
     return fig
 
 
