@@ -48,17 +48,21 @@ if __name__ == '__main__':
     ]
 
     origin_destination_pairs = [
-        ('Union Station', '27th & Welton'),
         ('27th & Welton', 'Union Station'),
-        ('38th & Blake', '27th & Welton'),
+        ('Union Station', '27th & Welton'),
         ('27th & Welton', '38th & Blake'),
-        ('DIA', '27th & Welton'),
+        ('38th & Blake', '27th & Welton'),
         ('27th & Welton', 'DIA'),
-        ('DIA', '16th & Stout'),
+        ('DIA', '27th & Welton'),
+        ('20th & Welton', 'DIA'),
+        ('DIA', '20th & Welton'),
         ('16th & Stout', 'DIA'),
+        ('DIA', '16th & Stout'),
+        ('I-25 & Broadway', 'DIA'),
+        ('DIA', 'I-25 & Broadway'),
     ]
 
-    kappas = [1, 0.75]
+    kappas = [1, 0.7]
     deltas = [i for i in range(14 + 1)]
 
     kappa_delta_pairs = [pair for pair in it.product(kappas, deltas)]
