@@ -6,7 +6,7 @@ from src.config import *
 
 def build_new_stop_times(**kwargs):
 
-    gtfs_dir = kwargs.get('GTFS_DIR', GTFS_DIR)
+    gtfs_dir = kwargs.get('gtfs_dir', GTFS_DIR)
 
     kappa = kwargs.get('kappa', KAPPA)
     delta = kwargs.get('delta', DELTA)

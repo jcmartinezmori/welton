@@ -8,11 +8,16 @@ from src.config import *
 
 def plot_trip_durations(columns, **kwargs):
 
+    gtfs_dir = kwargs.get('gtfs_dir', GTFS_DIR)
+    fig_name = kwargs.get('fig_name', 'fig')
+
     kappa = kwargs.get('kappa', KAPPA)
     query_start = kwargs.get('query_start', None)
     query_end = kwargs.get('query_end', None)
 
-    df = pd.read_csv(Path('output/durations/durations.csv'))
+    y_max = kwargs.get('y_max', 120)
+
+    df = pd.read_csv(Path(f'output/durations/{gtfs_dir}/durations.csv'))
 
     df['query_time'] = pd.to_datetime(df['query_time'], format='%H:%M:%S')
     if query_start is not None and query_end is not None:
@@ -135,7 +140,7 @@ def plot_trip_durations(columns, **kwargs):
     for ann in fig.layout.annotations:
         ann.font.size = 18
 
-    fig.update_yaxes(range=[0, 82.5])
+    fig.update_yaxes(range=[0, y_max])
     fig.update_yaxes(
         title_text="Trip Duration [min.]",
         title_font=dict(size=18),
@@ -217,7 +222,7 @@ def plot_trip_durations(columns, **kwargs):
         width=1600,
     )
 
-    output_dir = Path('output/figures/')
+    output_dir = Path(f'output/figures/{gtfs_dir}/{fig_name}')
     output_dir.mkdir(parents=True, exist_ok=True)
     fig.write_html(
         output_dir / f'trip_durations_kappa_{kappa}.html',
@@ -246,24 +251,58 @@ def plot_trip_durations(columns, **kwargs):
 
 if __name__ == "__main__":
 
-    columns = [
-        (("27th & Welton", "38th & Blake"), ("38th & Blake", "27th & Welton")),
-        (("27th & Welton", "Union Station"), ("Union Station", "27th & Welton")),
-        (("27th & Welton", "DIA"), ("DIA", "27th & Welton")),
-        (("20th & Welton", "DIA"), ("DIA", "20th & Welton")),
-        (("16th & Stout", "DIA"), ("DIA", "16th & Stout")),
-    ]
+    gtfs_dirs = ['gtfs_2025-08-31_2026-01-03', 'gtfs_2026-01-04_2026-06-06']
+    for gtfs_dir in gtfs_dirs:
 
-    plot_trip_durations(
-        columns,
-        kappa=0.7,
-        query_start='15:00:00',
-        query_end='18:00:00'
-    )
+        fig_name = 'welton'
+        columns = [
+            (("27th & Welton", "38th & Blake"), ("38th & Blake", "27th & Welton")),
+            (("27th & Welton", "Union Station"), ("Union Station", "27th & Welton")),
+            (("27th & Welton", "DIA"), ("DIA", "27th & Welton"))
+        ]
 
-    plot_trip_durations(
-        columns,
-        kappa=1,
-        query_start='15:00:00',
-        query_end='18:00:00'
-    )
+        plot_trip_durations(
+            columns,
+            fig_name=fig_name,
+            gtfs_dir=gtfs_dir,
+            kappa=0.7,
+            query_start='15:00:00',
+            query_end='18:00:00',
+            y_max=77.5
+        )
+        plot_trip_durations(
+            columns,
+            fig_name=fig_name,
+            gtfs_dir=gtfs_dir,
+            kappa=1,
+            query_start='15:00:00',
+            query_end='18:00:00',
+            y_max=77.5
+        )
+
+        fig_name = 'dia'
+        columns = [
+            (("20th & Welton", "DIA"), ("DIA", "20th & Welton")),
+            (("16th & Stout", "DIA"), ("DIA", "16th & Stout")),
+            (("10th & Osage", "DIA"), ("DIA", "10th & Osage")),
+            (("I-25 & Broadway", "DIA"), ("DIA", "I-25 & Broadway")),
+        ]
+
+        plot_trip_durations(
+            columns,
+            fig_name=fig_name,
+            gtfs_dir=gtfs_dir,
+            kappa=0.7,
+            query_start='15:00:00',
+            query_end='18:00:00',
+            y_max=90
+        )
+        plot_trip_durations(
+            columns,
+            fig_name=fig_name,
+            gtfs_dir=gtfs_dir,
+            kappa=1,
+            query_start='15:00:00',
+            query_end='18:00:00',
+            y_max=90
+        )

@@ -15,29 +15,32 @@ from zoneinfo import ZoneInfo
 
 def edit_otp_gtfs(**kwargs):
 
+    gtfs_dir = kwargs.get('gtfs_dir', GTFS_DIR)
+
     kappa = kwargs.get('kappa', None)
     delta = kwargs.get('delta', None)
 
-    input_gtfs_dir = Path('input/gtfs')
+    input_gtfs_dir = Path(f'input/{gtfs_dir}')
     otp_dir = Path('output/otp')
-    output_gtfs_dir = otp_dir / 'gtfs'
+    otp_gtfs_dir = otp_dir / 'gtfs'
     zip_path = otp_dir / 'gtfs.zip'
 
     otp_dir.mkdir(parents=True, exist_ok=True)
+    if otp_gtfs_dir.exists():
+        shutil.rmtree(otp_gtfs_dir)
 
-    if output_gtfs_dir.exists():
-        shutil.rmtree(output_gtfs_dir)
-
-    shutil.copytree(input_gtfs_dir, output_gtfs_dir)
+    shutil.copytree(input_gtfs_dir, otp_gtfs_dir)
     if kappa is not None and delta is not None:
-        shutil.copy(Path(f'output/stop_times/{kappa}_{delta}_stop_times.txt'), output_gtfs_dir / 'stop_times.txt')
+        shutil.copy(
+            Path(f'output/stop_times/{gtfs_dir}/{kappa}_{delta}_stop_times.txt'), otp_gtfs_dir / 'stop_times.txt'
+        )
 
     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
-        for file in output_gtfs_dir.rglob('*'):
+        for file in otp_gtfs_dir.rglob('*'):
             if file.is_file():
                 zf.write(
                     file,
-                    arcname=file.relative_to(output_gtfs_dir),
+                    arcname=file.relative_to(otp_gtfs_dir),
                 )
 
 

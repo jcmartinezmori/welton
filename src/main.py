@@ -10,6 +10,7 @@ from src.config import *
 
 def get_durations(origin, destination, query_times, **kwargs):
 
+    route_id = kwargs.get('route_id', ROUTE_ID)
     kappa = kwargs.get('kappa', None)
     delta = kwargs.get('delta', None)
     date = kwargs.get('date', DATE)
@@ -27,7 +28,7 @@ def get_durations(origin, destination, query_times, **kwargs):
         duration = itinerary['duration']
 
         transit_legs = [leg for leg in itinerary['legs'] if leg['transitLeg']]
-        if "1:109L" in [leg["route"]["gtfsId"] for leg in transit_legs]:
+        if f"1:{route_id}" in [leg["route"]["gtfsId"] for leg in transit_legs]:
             marker = 1
         else:
             marker = 0
@@ -41,9 +42,13 @@ def get_durations(origin, destination, query_times, **kwargs):
 
 if __name__ == '__main__':
 
+    gtfs_dir = GTFS_DIR
+    output_dir = Path(f'output/durations/{gtfs_dir}')
+    output_dir.mkdir(parents=True, exist_ok=True)
+
     query_times = [
         f'{hour:02d}:{minute:02d}:00'
-        for hour in range(15, 18 + 1)
+        for hour in range(15, 17 + 1)
         for minute in range(59 + 1)
     ]
 
@@ -58,6 +63,8 @@ if __name__ == '__main__':
         ('DIA', '20th & Welton'),
         ('16th & Stout', 'DIA'),
         ('DIA', '16th & Stout'),
+        ('10th & Osage', 'DIA'),
+        ('DIA', '10th & Osage'),
         ('I-25 & Broadway', 'DIA'),
         ('DIA', 'I-25 & Broadway'),
     ]
@@ -77,7 +84,7 @@ if __name__ == '__main__':
 
         edit_otp_gtfs(kappa=kappa, delta=delta)
 
-        log_path = Path(f'output/otp/log/otp_{kappa}_{delta}.log')
+        log_path = Path(f'output/otp/log/{gtfs_dir}/{kappa}_{delta}.log')
         log_path.parent.mkdir(parents=True, exist_ok=True)
 
         with log_path.open('w') as otp_log:
@@ -110,7 +117,8 @@ if __name__ == '__main__':
                     df = pd.DataFrame(
                         data, columns=['kappa', 'delta', 'origin', 'destination', 'query_time', 'duration', 'marker']
                     )
-                    df.to_csv(Path('output/durations/durations.csv'), index=False)
+
+                    df.to_csv(Path(output_dir / 'durations.csv'), index=False)
 
             finally:
                 print("     ... Stopping OTP")
