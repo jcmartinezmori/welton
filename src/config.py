@@ -1,7 +1,10 @@
 from pathlib import Path
 
 # ---------- GTFS ---------- #
+GTFS_DIR = 'gtfs_2026-01-04_2026-06-06'
 ROUTE_ID = '109L'
+# GTFS_DIR = 'gtfs_2025-08-31_2026-01-03'
+# ROUTE_ID = '101S'
 SERVICE_ID = 'FR'
 STATION_IDS = {
     '16th & Stout': 35266,

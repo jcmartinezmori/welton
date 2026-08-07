@@ -6,14 +6,16 @@ from src.config import *
 
 def build_new_stop_times(**kwargs):
 
+    gtfs_dir = kwargs.get('GTFS_DIR', GTFS_DIR)
+
     kappa = kwargs.get('kappa', KAPPA)
     delta = kwargs.get('delta', DELTA)
 
     tau = kwargs.get('tau', TAU)
     route_id = kwargs.get('route_id', ROUTE_ID)
 
-    trips_df = pd.read_csv(Path('input/gtfs/trips.txt'))
-    stop_times_df = pd.read_csv(Path('input/gtfs/stop_times.txt'))
+    trips_df = pd.read_csv(Path(f'input/{gtfs_dir}/trips.txt'))
+    stop_times_df = pd.read_csv(Path(f'input/{gtfs_dir}/stop_times.txt'))
 
     new_stop_times_df = stop_times_df.copy()
 
@@ -121,7 +123,10 @@ def build_new_stop_times(**kwargs):
     data_df = pd.DataFrame(data, columns=new_stop_times_df.columns)
     new_stop_times_df = pd.concat([new_stop_times_df, data_df], ignore_index=True)
     new_stop_times_df = new_stop_times_df.sort_values(by=['trip_id', 'stop_sequence'])
-    new_stop_times_df.to_csv(Path(f'output/stop_times/{kappa}_{delta}_stop_times.txt'), index=False)
+
+    output_dir = Path(f'output/stop_times/{gtfs_dir}')
+    output_dir.mkdir(parents=True, exist_ok=True)
+    new_stop_times_df.to_csv(output_dir / f'{kappa}_{delta}_stop_times.txt', index=False)
 
 
 def format_gtfs_time(time):
