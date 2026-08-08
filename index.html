@@ -1,69 +1,245 @@
-
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>My Site</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Completed D and L Line Reports</title>
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #dbe2ea;
+      --shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+      --radius: 18px;
+      --max: 1200px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.5;
+    }
+
+    .page {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #ffffff, #eef3ff);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.8rem, 3vw, 2.6rem);
+      line-height: 1.15;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.98rem;
+    }
+
+    nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    nav a {
+      display: inline-block;
+      text-decoration: none;
+      color: #1d4ed8;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 0.95rem;
+    }
+
+    section {
+      margin-bottom: 28px;
+    }
+
+    .section-title {
+      margin: 0 0 14px;
+      font-size: 1.5rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 18px;
+    }
+
+    .report-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    .report-card h3 {
+      margin: 0;
+      padding: 14px 16px;
+      font-size: 1rem;
+      border-bottom: 1px solid var(--border);
+      background: #fafbff;
+    }
+
+    .iframe-wrap {
+      width: 100%;
+      height: clamp(460px, 72vh, 900px);
+      background: #fff;
+    }
+
+    .iframe-wrap iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+    }
+
+    @media (max-width: 700px) {
+      .page {
+        padding: 14px;
+      }
+
+      header {
+        padding: 18px;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .iframe-wrap {
+        height: 70vh;
+      }
+    }
+  </style>
 </head>
-
 <body>
-  <h1>Completed D Line</h1>
+  <div class="page">
+    <header>
+      <h1>Completed D and L Line Reports</h1>
+      <p class="subtitle">Comparison of trip durations with and without track improvement assumptions.</p>
+      <nav>
+        <a href="#d-line">D Line</a>
+        <a href="#l-line">L Line</a>
+      </nav>
+    </header>
 
-  <h2>No Track Improvement</h2>
-  <iframe
-    src="output/figures/gtfs_2025-08-31_2026-01-03/welton/trip_durations_kappa_1.html"
-    width="100%"
-    height="800"
-    style="border: none;">
-  </iframe>
-  <iframe
-    src="output/figures/gtfs_2025-08-31_2026-01-03/dia/trip_durations_kappa_1.html"
-    width="100%"
-    height="800"
-    style="border: none;">
-  </iframe>
-  <h2>With Track Improvement</h2>
-  <iframe
-    src="output/figures/gtfs_2025-08-31_2026-01-03/welton/trip_durations_kappa_0.7.html"
-    width="100%"
-    height="800"
-    style="border: none;">
-  </iframe>
-  <iframe
-    src="output/figures/gtfs_2025-08-31_2026-01-03/dia/trip_durations_kappa_0.7.html"
-    width="100%"
-    height="800"
-    style="border: none;">
-  </iframe>
+    <section id="d-line">
+      <h2 class="section-title">Completed D Line</h2>
 
-  <h1>Completed L Line</h1>
+      <div class="grid">
+        <div class="report-card">
+          <h3>No Track Improvement · Welton</h3>
+          <div class="iframe-wrap">
+            <iframe
+              src="output/figures/gtfs_2025-08-31_2026-01-03/welton/trip_durations_kappa_1.html"
+              title="D Line Welton - No Track Improvement">
+            </iframe>
+          </div>
+        </div>
 
-  <h2>No Track Improvement</h2>
-  <iframe
-    src="output/figures/gtfs_2026-01-04_2026-06-06/welton/trip_durations_kappa_1.html"
-    width="100%"
-    height="800"
-    style="border: none;">
-  </iframe>
-  <iframe
-    src="output/figures/gtfs_2026-01-04_2026-06-06/dia/trip_durations_kappa_1.html"
-    width="100%"
-    height="800"
-    style="border: none;">
-  </iframe>
-  <h2>With Track Improvement</h2>
-  <iframe
-    src="output/figures/gtfs_2026-01-04_2026-06-06/welton/trip_durations_kappa_0.7.html"
-    width="100%"
-    height="800"
-    style="border: none;">
-  </iframe>
-  <iframe
-    src="output/figures/gtfs_2026-01-04_2026-06-06/dia/trip_durations_kappa_0.7.html"
-    width="100%"
-    height="800"
-    style="border: none;">
-  </iframe>
+        <div class="report-card">
+          <h3>No Track Improvement · DIA</h3>
+          <div class="iframe-wrap">
+            <iframe
+              src="output/figures/gtfs_2025-08-31_2026-01-03/dia/trip_durations_kappa_1.html"
+              title="D Line DIA - No Track Improvement">
+            </iframe>
+          </div>
+        </div>
+
+        <div class="report-card">
+          <h3>With Track Improvement · Welton</h3>
+          <div class="iframe-wrap">
+            <iframe
+              src="output/figures/gtfs_2025-08-31_2026-01-03/welton/trip_durations_kappa_0.7.html"
+              title="D Line Welton - With Track Improvement">
+            </iframe>
+          </div>
+        </div>
+
+        <div class="report-card">
+          <h3>With Track Improvement · DIA</h3>
+          <div class="iframe-wrap">
+            <iframe
+              src="output/figures/gtfs_2025-08-31_2026-01-03/dia/trip_durations_kappa_0.7.html"
+              title="D Line DIA - With Track Improvement">
+            </iframe>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="l-line">
+      <h2 class="section-title">Completed L Line</h2>
+
+      <div class="grid">
+        <div class="report-card">
+          <h3>No Track Improvement · Welton</h3>
+          <div class="iframe-wrap">
+            <iframe
+              src="output/figures/gtfs_2026-01-04_2026-06-06/welton/trip_durations_kappa_1.html"
+              title="L Line Welton - No Track Improvement">
+            </iframe>
+          </div>
+        </div>
+
+        <div class="report-card">
+          <h3>No Track Improvement · DIA</h3>
+          <div class="iframe-wrap">
+            <iframe
+              src="output/figures/gtfs_2026-01-04_2026-06-06/dia/trip_durations_kappa_1.html"
+              title="L Line DIA - No Track Improvement">
+            </iframe>
+          </div>
+        </div>
+
+        <div class="report-card">
+          <h3>With Track Improvement · Welton</h3>
+          <div class="iframe-wrap">
+            <iframe
+              src="output/figures/gtfs_2026-01-04_2026-06-06/welton/trip_durations_kappa_0.7.html"
+              title="L Line Welton - With Track Improvement">
+            </iframe>
+          </div>
+        </div>
+
+        <div class="report-card">
+          <h3>With Track Improvement · DIA</h3>
+          <div class="iframe-wrap">
+            <iframe
+              src="output/figures/gtfs_2026-01-04_2026-06-06/dia/trip_durations_kappa_0.7.html"
+              title="L Line DIA - With Track Improvement">
+            </iframe>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
 </body>
 </html>
-
