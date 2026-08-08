@@ -1,289 +1,457 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Completed Line Reports</title>
+
   <style>
-    :root {
-      --bg: #f6f7fb;
-      --card: #ffffff;
-      --text: #1f2937;
-      --muted: #6b7280;
-      --border: #dbe2ea;
-      --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-      --radius: 18px;
-      --accent: #2563eb;
-      --accent-bg: #dbeafe;
-      --accent-border: #93c5fd;
-      --max: 1100px;
+    * {
+      box-sizing: border-box;
     }
 
-    * { box-sizing: border-box; }
-
-    html, body {
+    body {
       margin: 0;
-      padding: 0;
-      background: var(--bg);
-      color: var(--text);
+      background: #f6f7fb;
+      color: #1f2937;
       font-family: Arial, Helvetica, sans-serif;
-      line-height: 1.5;
     }
 
     .page {
-      max-width: var(--max);
+      width: 100%;
+      max-width: 1500px;
       margin: 0 auto;
-      padding: 24px;
+      padding: 20px;
     }
 
     header {
-      background: linear-gradient(135deg, #ffffff, #eef3ff);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 24px;
-      box-shadow: var(--shadow);
       margin-bottom: 20px;
     }
 
     h1 {
-      margin: 0 0 8px;
-      font-size: clamp(1.8rem, 3vw, 2.6rem);
-      line-height: 1.15;
+      margin: 0 0 6px;
+      font-size: 2rem;
     }
 
     .subtitle {
       margin: 0;
-      color: var(--muted);
-      font-size: 0.98rem;
+      color: #6b7280;
     }
+
+    /* Controls */
 
     .controls {
-      display: grid;
-      gap: 16px;
-      margin-bottom: 20px;
-    }
-
-    .control-group {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 16px;
+      display: flex;
+      gap: 30px;
+      flex-wrap: wrap;
+      margin: 20px 0;
+      padding: 16px 20px;
+      background: white;
+      border: 1px solid #dbe2ea;
+      border-radius: 12px;
     }
 
     .control-label {
       display: block;
-      margin-bottom: 10px;
-      font-weight: 700;
-      color: var(--text);
+      font-weight: bold;
+      margin-bottom: 8px;
     }
 
     .button-row {
       display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
+      gap: 8px;
     }
 
     button {
-      appearance: none;
-      border: 1px solid var(--border);
-      background: #fff;
-      color: var(--text);
-      border-radius: 999px;
-      padding: 10px 14px;
-      font-size: 0.95rem;
+      border: 1px solid #dbe2ea;
+      background: white;
+      color: #1f2937;
+      padding: 9px 16px;
+      border-radius: 8px;
       cursor: pointer;
-      transition: transform 0.08s ease, background 0.15s ease, border-color 0.15s ease;
+      font-size: 0.95rem;
     }
 
     button:hover {
-      transform: translateY(-1px);
-      border-color: #c7d2fe;
+      background: #f1f5f9;
     }
 
     button.active {
-      background: var(--accent-bg);
-      border-color: var(--accent-border);
-      color: #1d4ed8;
-      font-weight: 700;
+      background: #2563eb;
+      border-color: #2563eb;
+      color: white;
+      font-weight: bold;
     }
 
-    .viewer-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
+    /* Reports */
+
+    .reports {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .report {
+      width: 100%;
+      background: white;
+      border: 1px solid #dbe2ea;
+      border-radius: 12px;
       overflow: hidden;
     }
 
-    .viewer-header {
-      padding: 16px 18px;
-      border-bottom: 1px solid var(--border);
-      background: #fafbff;
-    }
-
-    .viewer-title {
-      margin: 0 0 4px;
-      font-size: 1.1rem;
-    }
-
-    .viewer-meta {
+    .report-title {
       margin: 0;
-      color: var(--muted);
-      font-size: 0.95rem;
+      padding: 10px 16px;
+      font-size: 1.1rem;
+      background: #fafafa;
+      border-bottom: 1px solid #dbe2ea;
     }
 
-    .iframe-wrap {
-      width: 100%;
-      height: min(82vh, 900px);
-      background: #fff;
-    }
+    /*
+      The iframe is deliberately wide and relatively short.
+      This works well for Plotly charts and avoids the huge
+      vertical space from the previous 800/900px height.
+    */
 
     iframe {
-      width: 100%;
-      height: 100%;
-      border: 0;
       display: block;
+      width: 100%;
+      height: 500px;
+      border: 0;
+      overflow: hidden;
     }
 
-    .footer-note {
-      margin-top: 14px;
-      color: var(--muted);
-      font-size: 0.92rem;
+    @media (max-width: 900px) {
+      .page {
+        padding: 10px;
+      }
+
+      iframe {
+        height: 420px;
+      }
+
+      .controls {
+        gap: 15px;
+      }
     }
 
-    @media (max-width: 700px) {
-      .page { padding: 14px; }
-      header { padding: 18px; }
-      .control-group { padding: 14px; }
-      .iframe-wrap { height: 72vh; }
-      button { width: 100%; }
-      .button-row { flex-direction: column; }
+    @media (max-width: 600px) {
+      iframe {
+        height: 350px;
+      }
+
+      .controls {
+        flex-direction: column;
+      }
     }
   </style>
 </head>
+
 <body>
-  <div class="page">
-    <header>
-      <h1>Completed D and L Line Reports</h1>
-      <p class="subtitle">Choose one report at a time using the controls below.</p>
-    </header>
 
-    <div class="controls">
-      <div class="control-group">
-        <span class="control-label">Line</span>
-        <div class="button-row" id="lineButtons">
-          <button type="button" class="active" data-line="D">D Line</button>
-          <button type="button" data-line="L">L Line</button>
-        </div>
-      </div>
+<div class="page">
 
-      <div class="control-group">
-        <span class="control-label">Track assumption</span>
-        <div class="button-row" id="improvementButtons">
-          <button type="button" class="active" data-improvement="1">No Track Improvement</button>
-          <button type="button" data-improvement="0.7">With Track Improvement</button>
-        </div>
-      </div>
-
-      <div class="control-group">
-        <span class="control-label">Location</span>
-        <div class="button-row" id="siteButtons">
-          <button type="button" class="active" data-site="welton">Welton</button>
-          <button type="button" data-site="dia">DIA</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="viewer-card">
-      <div class="viewer-header">
-        <h2 class="viewer-title" id="viewerTitle">D Line · No Track Improvement · Welton</h2>
-        <p class="viewer-meta" id="viewerMeta">Showing one embedded report at a time.</p>
-      </div>
-      <div class="iframe-wrap">
-        <iframe id="reportFrame" src=""></iframe>
-      </div>
-    </div>
-
-    <p class="footer-note">
-      Tip: click any combination above to switch the embedded figure.
+  <header>
+    <h1>Completed D and L Line Reports</h1>
+    <p class="subtitle">
+      Select the line and track assumption. Welton is shown first, followed by DIA.
     </p>
+  </header>
+
+
+  <!-- CONTROLS -->
+
+  <div class="controls">
+
+    <div>
+      <span class="control-label">Line</span>
+
+      <div class="button-row" id="lineButtons">
+        <button
+          type="button"
+          class="active"
+          data-line="D">
+          D Line
+        </button>
+
+        <button
+          type="button"
+          data-line="L">
+          L Line
+        </button>
+      </div>
+    </div>
+
+
+    <div>
+      <span class="control-label">Track assumption</span>
+
+      <div class="button-row" id="improvementButtons">
+
+        <button
+          type="button"
+          class="active"
+          data-improvement="1">
+          No Track Improvement
+        </button>
+
+        <button
+          type="button"
+          data-improvement="0.7">
+          With Track Improvement
+        </button>
+
+      </div>
+    </div>
+
   </div>
 
-  <script>
-    const REPORTS = {
-      D: {
-        "1": {
-          welton: "output/figures/gtfs_2025-08-31_2026-01-03/welton/trip_durations_kappa_1.html",
-          dia: "output/figures/gtfs_2025-08-31_2026-01-03/dia/trip_durations_kappa_1.html"
-        },
-        "0.7": {
-          welton: "output/figures/gtfs_2025-08-31_2026-01-03/welton/trip_durations_kappa_0.7.html",
-          dia: "output/figures/gtfs_2025-08-31_2026-01-03/dia/trip_durations_kappa_0.7.html"
-        }
+
+  <!-- REPORTS -->
+
+  <div class="reports">
+
+    <!-- Welton -->
+
+    <div class="report">
+
+      <h2
+        class="report-title"
+        id="weltonTitle">
+        Welton
+      </h2>
+
+      <iframe
+        id="weltonFrame"
+        scrolling="no"
+        title="Welton report">
+      </iframe>
+
+    </div>
+
+
+    <!-- DIA -->
+
+    <div class="report">
+
+      <h2
+        class="report-title"
+        id="diaTitle">
+        DIA
+      </h2>
+
+      <iframe
+        id="diaFrame"
+        scrolling="no"
+        title="DIA report">
+      </iframe>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<script>
+
+  /*
+   * Report locations
+   */
+
+  const REPORTS = {
+
+    D: {
+
+      "1": {
+        welton:
+          "output/figures/gtfs_2025-08-31_2026-01-03/welton/trip_durations_kappa_1.html",
+
+        dia:
+          "output/figures/gtfs_2025-08-31_2026-01-03/dia/trip_durations_kappa_1.html"
       },
-      L: {
-        "1": {
-          welton: "output/figures/gtfs_2026-01-04_2026-06-06/welton/trip_durations_kappa_1.html",
-          dia: "output/figures/gtfs_2026-01-04_2026-06-06/dia/trip_durations_kappa_1.html"
-        },
-        "0.7": {
-          welton: "output/figures/gtfs_2026-01-04_2026-06-06/welton/trip_durations_kappa_0.7.html",
-          dia: "output/figures/gtfs_2026-01-04_2026-06-06/dia/trip_durations_kappa_0.7.html"
-        }
+
+      "0.7": {
+        welton:
+          "output/figures/gtfs_2025-08-31_2026-01-03/welton/trip_durations_kappa_0.7.html",
+
+        dia:
+          "output/figures/gtfs_2025-08-31_2026-01-03/dia/trip_durations_kappa_0.7.html"
       }
-    };
 
-    const LABELS = {
-      line: { D: "D Line", L: "L Line" },
-      improvement: { "1": "No Track Improvement", "0.7": "With Track Improvement" },
-      site: { welton: "Welton", dia: "DIA" }
-    };
+    },
 
-    const state = {
-      line: "D",
-      improvement: "1",
-      site: "welton"
-    };
 
-    const lineButtons = document.querySelectorAll("#lineButtons button");
-    const improvementButtons = document.querySelectorAll("#improvementButtons button");
-    const siteButtons = document.querySelectorAll("#siteButtons button");
-    const frame = document.getElementById("reportFrame");
-    const title = document.getElementById("viewerTitle");
+    L: {
 
-    function updateUI() {
-      const src = REPORTS[state.line][state.improvement][state.site];
-      frame.src = src;
-      title.textContent = `${LABELS.line[state.line]} · ${LABELS.improvement[state.improvement]} · ${LABELS.site[state.site]}`;
+      "1": {
+        welton:
+          "output/figures/gtfs_2026-01-04_2026-06-06/welton/trip_durations_kappa_1.html",
 
-      lineButtons.forEach(btn => btn.classList.toggle("active", btn.dataset.line === state.line));
-      improvementButtons.forEach(btn => btn.classList.toggle("active", btn.dataset.improvement === state.improvement));
-      siteButtons.forEach(btn => btn.classList.toggle("active", btn.dataset.site === state.site));
+        dia:
+          "output/figures/gtfs_2026-01-04_2026-06-06/dia/trip_durations_kappa_1.html"
+      },
+
+      "0.7": {
+        welton:
+          "output/figures/gtfs_2026-01-04_2026-06-06/welton/trip_durations_kappa_0.7.html",
+
+        dia:
+          "output/figures/gtfs_2026-01-04_2026-06-06/dia/trip_durations_kappa_0.7.html"
+      }
+
     }
 
-    lineButtons.forEach(btn => {
-      btn.addEventListener("click", () => {
-        state.line = btn.dataset.line;
-        updateUI();
-      });
+  };
+
+
+  const LABELS = {
+
+    line: {
+      D: "D Line",
+      L: "L Line"
+    },
+
+    improvement: {
+      "1": "No Track Improvement",
+      "0.7": "With Track Improvement"
+    }
+
+  };
+
+
+  /*
+   * Current selection
+   */
+
+  const state = {
+    line: "D",
+    improvement: "1"
+  };
+
+
+  /*
+   * Elements
+   */
+
+  const lineButtons =
+    document.querySelectorAll("#lineButtons button");
+
+  const improvementButtons =
+    document.querySelectorAll("#improvementButtons button");
+
+  const weltonFrame =
+    document.getElementById("weltonFrame");
+
+  const diaFrame =
+    document.getElementById("diaFrame");
+
+  const weltonTitle =
+    document.getElementById("weltonTitle");
+
+  const diaTitle =
+    document.getElementById("diaTitle");
+
+
+  /*
+   * Update reports
+   */
+
+  function updateUI() {
+
+    const selected =
+      REPORTS[state.line][state.improvement];
+
+
+    /* Update iframe contents */
+
+    weltonFrame.src =
+      selected.welton;
+
+    diaFrame.src =
+      selected.dia;
+
+
+    /* Update titles */
+
+    weltonTitle.textContent =
+      `${LABELS.line[state.line]} · ` +
+      `${LABELS.improvement[state.improvement]} · Welton`;
+
+    diaTitle.textContent =
+      `${LABELS.line[state.line]} · ` +
+      `${LABELS.improvement[state.improvement]} · DIA`;
+
+
+    /* Update active buttons */
+
+    lineButtons.forEach(button => {
+
+      button.classList.toggle(
+        "active",
+        button.dataset.line === state.line
+      );
+
     });
 
-    improvementButtons.forEach(btn => {
-      btn.addEventListener("click", () => {
-        state.improvement = btn.dataset.improvement;
-        updateUI();
-      });
+
+    improvementButtons.forEach(button => {
+
+      button.classList.toggle(
+        "active",
+        button.dataset.improvement === state.improvement
+      );
+
     });
 
-    siteButtons.forEach(btn => {
-      btn.addEventListener("click", () => {
-        state.site = btn.dataset.site;
-        updateUI();
-      });
+  }
+
+
+  /*
+   * Line buttons
+   */
+
+  lineButtons.forEach(button => {
+
+    button.addEventListener("click", () => {
+
+      state.line =
+        button.dataset.line;
+
+      updateUI();
+
     });
 
-    updateUI();
-  </script>
+  });
+
+
+  /*
+   * Improvement buttons
+   */
+
+  improvementButtons.forEach(button => {
+
+    button.addEventListener("click", () => {
+
+      state.improvement =
+        button.dataset.improvement;
+
+      updateUI();
+
+    });
+
+  });
+
+
+  /*
+   * Initial load
+   */
+
+  updateUI();
+
+</script>
+
 </body>
 </html>
+```
