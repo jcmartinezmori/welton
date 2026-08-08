@@ -104,11 +104,17 @@
       border-bottom: 1px solid #dbe2ea;
     }
 
-    iframe {
-      display: block;
+    .iframe-shell {
       width: 100%;
-      border: 0;
       overflow: hidden;
+      position: relative;
+      background: white;
+    }
+
+    .iframe-shell iframe {
+      display: block;
+      border: 0;
+      transform-origin: top left;
     }
 
     @media (max-width: 900px) {
@@ -159,12 +165,16 @@
     <div class="reports">
       <div class="report">
         <h2 class="report-title" id="weltonTitle">Welton</h2>
-        <iframe id="weltonFrame" scrolling="no" title="Welton report"></iframe>
+        <div class="iframe-shell" id="weltonShell">
+          <iframe id="weltonFrame" scrolling="no" title="Welton report"></iframe>
+        </div>
       </div>
 
       <div class="report">
         <h2 class="report-title" id="diaTitle">DIA</h2>
-        <iframe id="diaFrame" scrolling="no" title="DIA report"></iframe>
+        <div class="iframe-shell" id="diaShell">
+          <iframe id="diaFrame" scrolling="no" title="DIA report"></iframe>
+        </div>
       </div>
     </div>
   </div>
@@ -207,55 +217,61 @@
     const improvementButtons = document.querySelectorAll("#improvementButtons button");
     const weltonFrame = document.getElementById("weltonFrame");
     const diaFrame = document.getElementById("diaFrame");
+    const weltonShell = document.getElementById("weltonShell");
+    const diaShell = document.getElementById("diaShell");
     const weltonTitle = document.getElementById("weltonTitle");
     const diaTitle = document.getElementById("diaTitle");
 
-    function setIframeHeight(iframe) {
+    function fitIframe(iframe, shell) {
       try {
         const doc = iframe.contentWindow.document;
-        const body = doc.body;
         const html = doc.documentElement;
+        const body = doc.body;
 
-        const height = Math.max(
+        const contentWidth = Math.max(
+          body.scrollWidth,
+          body.offsetWidth,
+          html.scrollWidth,
+          html.offsetWidth
+        );
+
+        const contentHeight = Math.max(
           body.scrollHeight,
           body.offsetHeight,
-          html.clientHeight,
           html.scrollHeight,
           html.offsetHeight
         );
 
-        iframe.style.height = height + "px";
+        const shellWidth = shell.clientWidth || window.innerWidth;
+        const scale = Math.min(1, shellWidth / contentWidth);
+
+        iframe.style.width = contentWidth + "px";
+        iframe.style.height = contentHeight + "px";
+        iframe.style.transform = `scale(${scale})`;
+
+        shell.style.height = (contentHeight * scale) + "px";
       } catch (err) {
-        console.warn("Could not resize iframe:", err);
+        console.warn("Could not fit iframe:", err);
       }
     }
 
-    function watchIframe(iframe) {
-      const resize = () => {
-        setIframeHeight(iframe);
-      };
-
+    function attachFitOnLoad(iframe, shell) {
       iframe.addEventListener("load", () => {
-        resize();
+        const runFit = () => fitIframe(iframe, shell);
+
+        runFit();
+        setTimeout(runFit, 100);
+        setTimeout(runFit, 400);
+        setTimeout(runFit, 1000);
 
         try {
           const doc = iframe.contentWindow.document;
-
-          if (doc && doc.body) {
-            const observer = new ResizeObserver(() => resize());
-            observer.observe(doc.body);
-
-            const html = doc.documentElement;
-            if (html) observer.observe(html);
-          }
+          const observer = new ResizeObserver(runFit);
+          observer.observe(doc.body);
+          observer.observe(doc.documentElement);
         } catch (err) {
-          console.warn("ResizeObserver not attached:", err);
+          console.warn("Resize observer unavailable for iframe:", err);
         }
-
-        // Plotly and similar libraries may render after load.
-        setTimeout(resize, 100);
-        setTimeout(resize, 500);
-        setTimeout(resize, 1000);
       });
     }
 
@@ -294,8 +310,13 @@
       });
     });
 
-    watchIframe(weltonFrame);
-    watchIframe(diaFrame);
+    attachFitOnLoad(weltonFrame, weltonShell);
+    attachFitOnLoad(diaFrame, diaShell);
+
+    window.addEventListener("resize", () => {
+      fitIframe(weltonFrame, weltonShell);
+      fitIframe(diaFrame, diaShell);
+    });
 
     updateUI();
   </script>
