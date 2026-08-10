@@ -100,18 +100,23 @@
       border-bottom: 1px solid #dbe2ea;
     }
 
-    .iframe-shell {
-      width: 100%;
-      overflow: hidden;
-      position: relative;
-      background: white;
+    .figure-area {
+      padding: 16px;
+      min-height: 280px;
     }
 
-    .iframe-shell iframe {
-      display: block;
-      border: 0;
-      width: 100%;
-      height: 900px;
+    .figure-note {
+      margin: 0 0 12px;
+      color: #6b7280;
+      font-size: 0.95rem;
+    }
+
+    .chart-box {
+      border: 1px dashed #cbd5e1;
+      border-radius: 10px;
+      padding: 16px;
+      min-height: 200px;
+      background: #fff;
     }
 
     @media (max-width: 900px) {
@@ -159,15 +164,17 @@
     <div class="reports">
       <div class="report">
         <h2 class="report-title">Access to Five Points</h2>
-        <div class="iframe-shell">
-          <iframe id="weltonFrame" title="Access to Five Points report"></iframe>
+        <div class="figure-area">
+          <p class="figure-note" id="weltonState"></p>
+          <div class="chart-box" id="weltonChart"></div>
         </div>
       </div>
 
       <div class="report">
         <h2 class="report-title">Access to DIA</h2>
-        <div class="iframe-shell">
-          <iframe id="diaFrame" title="Access to DIA report"></iframe>
+        <div class="figure-area">
+          <p class="figure-note" id="diaState"></p>
+          <div class="chart-box" id="diaChart"></div>
         </div>
       </div>
     </div>
@@ -177,22 +184,13 @@
     let currentLine = "D";
     let currentImprovement = 1;
 
-    const weltonFrame = document.getElementById("weltonFrame");
-    const diaFrame = document.getElementById("diaFrame");
-
     const lineButtons = document.getElementById("lineButtons");
     const improvementButtons = document.getElementById("improvementButtons");
 
-    // Change these to the actual filenames/paths of your two report HTML files.
-    const WELTON_REPORT_URL = "welton.html";
-    const DIA_REPORT_URL = "dia.html";
-
-    function buildUrl(baseUrl) {
-      const url = new URL(baseUrl, window.location.href);
-      url.searchParams.set("line", currentLine);
-      url.searchParams.set("improvement", String(currentImprovement));
-      return url.toString();
-    }
+    const weltonState = document.getElementById("weltonState");
+    const diaState = document.getElementById("diaState");
+    const weltonChart = document.getElementById("weltonChart");
+    const diaChart = document.getElementById("diaChart");
 
     function syncButtonStates() {
       document.querySelectorAll("#lineButtons button").forEach((btn) => {
@@ -204,23 +202,46 @@
       });
     }
 
+    function renderWelton(line, improvement) {
+      // Replace this with your actual Welton / Access to Five Points chart code.
+      weltonState.textContent = `Line: ${line === "D" ? "Holiday Train (Original D Line)" : "L Line (Truncated D Line)"} | Track assumption: ${improvement === 1 ? "No Further Track Improvement" : "Reduction of In-Vehicle Travel Time"}`;
+
+      weltonChart.innerHTML = `
+        <strong>Access to Five Points</strong><br>
+        This is where your first figure should render.<br>
+        Current line: ${line}<br>
+        Current improvement: ${improvement}
+      `;
+    }
+
+    function renderDia(line, improvement) {
+      // Replace this with your actual DIA / Access to DIA chart code.
+      diaState.textContent = `Line: ${line === "D" ? "Holiday Train (Original D Line)" : "L Line (Truncated D Line)"} | Track assumption: ${improvement === 1 ? "No Further Track Improvement" : "Reduction of In-Vehicle Travel Time"}`;
+
+      diaChart.innerHTML = `
+        <strong>Access to DIA</strong><br>
+        This is where your second figure should render.<br>
+        Current line: ${line}<br>
+        Current improvement: ${improvement}
+      `;
+    }
+
     function updateReports() {
-      // Both figures use the exact same state.
-      const params = `line=${encodeURIComponent(currentLine)}&improvement=${encodeURIComponent(currentImprovement)}`;
-      weltonFrame.src = `${WELTON_REPORT_URL}?${params}`;
-      diaFrame.src = `${DIA_REPORT_URL}?${params}`;
+      // Shared state: both figures always use the same line/improvement.
+      renderWelton(currentLine, currentImprovement);
+      renderDia(currentLine, currentImprovement);
       syncButtonStates();
     }
 
-    lineButtons.addEventListener("click", (e) => {
-      const btn = e.target.closest("button[data-line]");
+    lineButtons.addEventListener("click", (event) => {
+      const btn = event.target.closest("button[data-line]");
       if (!btn) return;
       currentLine = btn.dataset.line;
       updateReports();
     });
 
-    improvementButtons.addEventListener("click", (e) => {
-      const btn = e.target.closest("button[data-improvement]");
+    improvementButtons.addEventListener("click", (event) => {
+      const btn = event.target.closest("button[data-improvement]");
       if (!btn) return;
       currentImprovement = Number(btn.dataset.improvement);
       updateReports();
