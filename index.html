@@ -112,7 +112,6 @@
       border: 0;
       width: 100%;
       height: 900px;
-      transform-origin: top left;
     }
 
     @media (max-width: 900px) {
@@ -159,119 +158,41 @@
 
     <div class="reports">
       <div class="report">
-        <h2 class="report-title" id="weltonTitle">Access to Five Points</h2>
+        <h2 class="report-title">Access to Five Points</h2>
         <div class="iframe-shell">
-          <iframe id="weltonFrame" scrolling="no" title="Access to Five Points report"></iframe>
+          <iframe id="weltonFrame" title="Access to Five Points report"></iframe>
         </div>
       </div>
 
       <div class="report">
-        <h2 class="report-title" id="diaTitle">Access to DIA</h2>
+        <h2 class="report-title">Access to DIA</h2>
         <div class="iframe-shell">
-          <iframe id="diaFrame" scrolling="no" title="Access to DIA report"></iframe>
+          <iframe id="diaFrame" title="Access to DIA report"></iframe>
         </div>
       </div>
     </div>
   </div>
 
   <script>
-    // Shared state
     let currentLine = "D";
     let currentImprovement = 1;
-
-    const lineButtons = document.getElementById("lineButtons");
-    const improvementButtons = document.getElementById("improvementButtons");
 
     const weltonFrame = document.getElementById("weltonFrame");
     const diaFrame = document.getElementById("diaFrame");
 
-    // Paste your actual report HTML here.
-    // These can be full standalone HTML documents or just body content.
-    const weltonHtmlByScenario = {
-      D: {
-        1: `<!doctype html>
-<html>
-  <body style="margin:0;font-family:Arial,Helvetica,sans-serif;">
-    <div style="padding:24px;">
-      <h2>Access to Five Points</h2>
-      <p>Paste the D Line / No Further Track Improvement report HTML here.</p>
-    </div>
-  </body>
-</html>`,
-        0.7: `<!doctype html>
-<html>
-  <body style="margin:0;font-family:Arial,Helvetica,sans-serif;">
-    <div style="padding:24px;">
-      <h2>Access to Five Points</h2>
-      <p>Paste the D Line / Reduction of In-Vehicle Travel Time report HTML here.</p>
-    </div>
-  </body>
-</html>`
-      },
-      L: {
-        1: `<!doctype html>
-<html>
-  <body style="margin:0;font-family:Arial,Helvetica,sans-serif;">
-    <div style="padding:24px;">
-      <h2>Access to Five Points</h2>
-      <p>Paste the L Line / No Further Track Improvement report HTML here.</p>
-    </div>
-  </body>
-</html>`,
-        0.7: `<!doctype html>
-<html>
-  <body style="margin:0;font-family:Arial,Helvetica,sans-serif;">
-    <div style="padding:24px;">
-      <h2>Access to Five Points</h2>
-      <p>Paste the L Line / Reduction of In-Vehicle Travel Time report HTML here.</p>
-    </div>
-  </body>
-</html>`
-      }
-    };
+    const lineButtons = document.getElementById("lineButtons");
+    const improvementButtons = document.getElementById("improvementButtons");
 
-    const diaHtmlByScenario = {
-      D: {
-        1: `<!doctype html>
-<html>
-  <body style="margin:0;font-family:Arial,Helvetica,sans-serif;">
-    <div style="padding:24px;">
-      <h2>Access to DIA</h2>
-      <p>Paste the D Line / No Further Track Improvement report HTML here.</p>
-    </div>
-  </body>
-</html>`,
-        0.7: `<!doctype html>
-<html>
-  <body style="margin:0;font-family:Arial,Helvetica,sans-serif;">
-    <div style="padding:24px;">
-      <h2>Access to DIA</h2>
-      <p>Paste the D Line / Reduction of In-Vehicle Travel Time report HTML here.</p>
-    </div>
-  </body>
-</html>`
-      },
-      L: {
-        1: `<!doctype html>
-<html>
-  <body style="margin:0;font-family:Arial,Helvetica,sans-serif;">
-    <div style="padding:24px;">
-      <h2>Access to DIA</h2>
-      <p>Paste the L Line / No Further Track Improvement report HTML here.</p>
-    </div>
-  </body>
-</html>`,
-        0.7: `<!doctype html>
-<html>
-  <body style="margin:0;font-family:Arial,Helvetica,sans-serif;">
-    <div style="padding:24px;">
-      <h2>Access to DIA</h2>
-      <p>Paste the L Line / Reduction of In-Vehicle Travel Time report HTML here.</p>
-    </div>
-  </body>
-</html>`
-      }
-    };
+    // Change these to the actual filenames/paths of your two report HTML files.
+    const WELTON_REPORT_URL = "welton.html";
+    const DIA_REPORT_URL = "dia.html";
+
+    function buildUrl(baseUrl) {
+      const url = new URL(baseUrl, window.location.href);
+      url.searchParams.set("line", currentLine);
+      url.searchParams.set("improvement", String(currentImprovement));
+      return url.toString();
+    }
 
     function syncButtonStates() {
       document.querySelectorAll("#lineButtons button").forEach((btn) => {
@@ -284,36 +205,25 @@
     }
 
     function updateReports() {
-      // Shared delta/state: both figures update together here.
-      const weltonHtml = weltonHtmlByScenario[currentLine][currentImprovement];
-      const diaHtml = diaHtmlByScenario[currentLine][currentImprovement];
-
-      weltonFrame.srcdoc = weltonHtml;
-      diaFrame.srcdoc = diaHtml;
-
+      // Both figures use the exact same state.
+      const params = `line=${encodeURIComponent(currentLine)}&improvement=${encodeURIComponent(currentImprovement)}`;
+      weltonFrame.src = `${WELTON_REPORT_URL}?${params}`;
+      diaFrame.src = `${DIA_REPORT_URL}?${params}`;
       syncButtonStates();
     }
 
-    function setLine(line) {
-      currentLine = line;
-      updateReports();
-    }
-
-    function setImprovement(improvement) {
-      currentImprovement = improvement;
-      updateReports();
-    }
-
-    lineButtons.addEventListener("click", (event) => {
-      const btn = event.target.closest("button[data-line]");
+    lineButtons.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-line]");
       if (!btn) return;
-      setLine(btn.dataset.line);
+      currentLine = btn.dataset.line;
+      updateReports();
     });
 
-    improvementButtons.addEventListener("click", (event) => {
-      const btn = event.target.closest("button[data-improvement]");
+    improvementButtons.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-improvement]");
       if (!btn) return;
-      setImprovement(Number(btn.dataset.improvement));
+      currentImprovement = Number(btn.dataset.improvement);
+      updateReports();
     });
 
     updateReports();
