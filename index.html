@@ -1,10 +1,14 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Operational Scenarios under a Completed D Line</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Completed Line Reports</title>
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
       background: #f6f7fb;
@@ -100,23 +104,17 @@
       border-bottom: 1px solid #dbe2ea;
     }
 
-    .figure-area {
-      padding: 16px;
-      min-height: 280px;
+    .iframe-shell {
+      width: 100%;
+      overflow: hidden;
+      position: relative;
+      background: white;
     }
 
-    .figure-note {
-      margin: 0 0 12px;
-      color: #6b7280;
-      font-size: 0.95rem;
-    }
-
-    .chart-box {
-      border: 1px dashed #cbd5e1;
-      border-radius: 10px;
-      padding: 16px;
-      min-height: 200px;
-      background: #fff;
+    .iframe-shell iframe {
+      display: block;
+      border: 0;
+      transform-origin: top left;
     }
 
     @media (max-width: 900px) {
@@ -136,118 +134,191 @@
     }
   </style>
 </head>
+
 <body>
   <div class="page">
     <header>
-      <h1>Operational Scenarios under a Completed D Line</h1>
-      <p class="subtitle"></p>
+      <h1>Completed D and L Line Reports</h1>
+      <p class="subtitle">
+        Select the line and track assumption. Welton is shown first, followed by DIA.
+      </p>
     </header>
 
     <div class="controls">
       <div>
         <span class="control-label">Line</span>
         <div class="button-row" id="lineButtons">
-          <button type="button" class="active" data-line="D">Holiday Train (Original D Line)</button>
-          <button type="button" data-line="L">L Line (Truncated D Line)</button>
+          <button type="button" class="active" data-line="D">D Line</button>
+          <button type="button" data-line="L">L Line</button>
         </div>
       </div>
 
       <div>
         <span class="control-label">Track assumption</span>
         <div class="button-row" id="improvementButtons">
-          <button type="button" class="active" data-improvement="1">No Further Track Improvement</button>
-          <button type="button" data-improvement="0.7">Reduction of In-Vehicle Travel Time</button>
+          <button type="button" class="active" data-improvement="1">No Track Improvement</button>
+          <button type="button" data-improvement="0.7">With Track Improvement</button>
         </div>
       </div>
     </div>
 
     <div class="reports">
       <div class="report">
-        <h2 class="report-title">Access to Five Points</h2>
-        <div class="figure-area">
-          <p class="figure-note" id="weltonState"></p>
-          <div class="chart-box" id="weltonChart"></div>
+        <h2 class="report-title" id="weltonTitle">Welton</h2>
+        <div class="iframe-shell" id="weltonShell">
+          <iframe id="weltonFrame" scrolling="no" title="Welton report"></iframe>
         </div>
       </div>
 
       <div class="report">
-        <h2 class="report-title">Access to DIA</h2>
-        <div class="figure-area">
-          <p class="figure-note" id="diaState"></p>
-          <div class="chart-box" id="diaChart"></div>
+        <h2 class="report-title" id="diaTitle">DIA</h2>
+        <div class="iframe-shell" id="diaShell">
+          <iframe id="diaFrame" scrolling="no" title="DIA report"></iframe>
         </div>
       </div>
     </div>
   </div>
 
   <script>
-    let currentLine = "D";
-    let currentImprovement = 1;
+    const REPORTS = {
+      D: {
+        "1": {
+          welton: "output/figures/gtfs_2025-08-31_2026-01-03/welton/trip_durations_kappa_1.html",
+          dia: "output/figures/gtfs_2025-08-31_2026-01-03/dia/trip_durations_kappa_1.html"
+        },
+        "0.7": {
+          welton: "output/figures/gtfs_2025-08-31_2026-01-03/welton/trip_durations_kappa_0.7.html",
+          dia: "output/figures/gtfs_2025-08-31_2026-01-03/dia/trip_durations_kappa_0.7.html"
+        }
+      },
+      L: {
+        "1": {
+          welton: "output/figures/gtfs_2026-01-04_2026-06-06/welton/trip_durations_kappa_1.html",
+          dia: "output/figures/gtfs_2026-01-04_2026-06-06/dia/trip_durations_kappa_1.html"
+        },
+        "0.7": {
+          welton: "output/figures/gtfs_2026-01-04_2026-06-06/welton/trip_durations_kappa_0.7.html",
+          dia: "output/figures/gtfs_2026-01-04_2026-06-06/dia/trip_durations_kappa_0.7.html"
+        }
+      }
+    };
 
-    const lineButtons = document.getElementById("lineButtons");
-    const improvementButtons = document.getElementById("improvementButtons");
+    const LABELS = {
+      line: { D: "D Line", L: "L Line" },
+      improvement: { "1": "No Track Improvement", "0.7": "With Track Improvement" }
+    };
 
-    const weltonState = document.getElementById("weltonState");
-    const diaState = document.getElementById("diaState");
-    const weltonChart = document.getElementById("weltonChart");
-    const diaChart = document.getElementById("diaChart");
+    const state = {
+      line: "D",
+      improvement: "1"
+    };
 
-    function syncButtonStates() {
-      document.querySelectorAll("#lineButtons button").forEach((btn) => {
-        btn.classList.toggle("active", btn.dataset.line === currentLine);
+    const lineButtons = document.querySelectorAll("#lineButtons button");
+    const improvementButtons = document.querySelectorAll("#improvementButtons button");
+    const weltonFrame = document.getElementById("weltonFrame");
+    const diaFrame = document.getElementById("diaFrame");
+    const weltonShell = document.getElementById("weltonShell");
+    const diaShell = document.getElementById("diaShell");
+    const weltonTitle = document.getElementById("weltonTitle");
+    const diaTitle = document.getElementById("diaTitle");
+
+    function fitIframe(iframe, shell) {
+      try {
+        const doc = iframe.contentWindow.document;
+        const html = doc.documentElement;
+        const body = doc.body;
+
+        const contentWidth = Math.max(
+          body.scrollWidth,
+          body.offsetWidth,
+          html.scrollWidth,
+          html.offsetWidth
+        );
+
+        const contentHeight = Math.max(
+          body.scrollHeight,
+          body.offsetHeight,
+          html.scrollHeight,
+          html.offsetHeight
+        );
+
+        const shellWidth = shell.clientWidth || window.innerWidth;
+        const scale = Math.min(1, shellWidth / contentWidth);
+
+        iframe.style.width = contentWidth + "px";
+        iframe.style.height = contentHeight + "px";
+        iframe.style.transform = `scale(${scale})`;
+
+        shell.style.height = (contentHeight * scale) + "px";
+      } catch (err) {
+        console.warn("Could not fit iframe:", err);
+      }
+    }
+
+    function attachFitOnLoad(iframe, shell) {
+      iframe.addEventListener("load", () => {
+        const runFit = () => fitIframe(iframe, shell);
+
+        runFit();
+        setTimeout(runFit, 100);
+        setTimeout(runFit, 400);
+        setTimeout(runFit, 1000);
+
+        try {
+          const doc = iframe.contentWindow.document;
+          const observer = new ResizeObserver(runFit);
+          observer.observe(doc.body);
+          observer.observe(doc.documentElement);
+        } catch (err) {
+          console.warn("Resize observer unavailable for iframe:", err);
+        }
+      });
+    }
+
+    function updateUI() {
+      const selected = REPORTS[state.line][state.improvement];
+
+      weltonFrame.src = selected.welton;
+      diaFrame.src = selected.dia;
+
+      weltonTitle.textContent =
+        `${LABELS.line[state.line]} · ${LABELS.improvement[state.improvement]} · Welton`;
+
+      diaTitle.textContent =
+        `${LABELS.line[state.line]} · ${LABELS.improvement[state.improvement]} · DIA`;
+
+      lineButtons.forEach(button => {
+        button.classList.toggle("active", button.dataset.line === state.line);
       });
 
-      document.querySelectorAll("#improvementButtons button").forEach((btn) => {
-        btn.classList.toggle("active", Number(btn.dataset.improvement) === currentImprovement);
+      improvementButtons.forEach(button => {
+        button.classList.toggle("active", button.dataset.improvement === state.improvement);
       });
     }
 
-    function renderWelton(line, improvement) {
-      // Replace this with your actual Welton / Access to Five Points chart code.
-      weltonState.textContent = `Line: ${line === "D" ? "Holiday Train (Original D Line)" : "L Line (Truncated D Line)"} | Track assumption: ${improvement === 1 ? "No Further Track Improvement" : "Reduction of In-Vehicle Travel Time"}`;
-
-      weltonChart.innerHTML = `
-        <strong>Access to Five Points</strong><br>
-        This is where your first figure should render.<br>
-        Current line: ${line}<br>
-        Current improvement: ${improvement}
-      `;
-    }
-
-    function renderDia(line, improvement) {
-      // Replace this with your actual DIA / Access to DIA chart code.
-      diaState.textContent = `Line: ${line === "D" ? "Holiday Train (Original D Line)" : "L Line (Truncated D Line)"} | Track assumption: ${improvement === 1 ? "No Further Track Improvement" : "Reduction of In-Vehicle Travel Time"}`;
-
-      diaChart.innerHTML = `
-        <strong>Access to DIA</strong><br>
-        This is where your second figure should render.<br>
-        Current line: ${line}<br>
-        Current improvement: ${improvement}
-      `;
-    }
-
-    function updateReports() {
-      // Shared state: both figures always use the same line/improvement.
-      renderWelton(currentLine, currentImprovement);
-      renderDia(currentLine, currentImprovement);
-      syncButtonStates();
-    }
-
-    lineButtons.addEventListener("click", (event) => {
-      const btn = event.target.closest("button[data-line]");
-      if (!btn) return;
-      currentLine = btn.dataset.line;
-      updateReports();
+    lineButtons.forEach(button => {
+      button.addEventListener("click", () => {
+        state.line = button.dataset.line;
+        updateUI();
+      });
     });
 
-    improvementButtons.addEventListener("click", (event) => {
-      const btn = event.target.closest("button[data-improvement]");
-      if (!btn) return;
-      currentImprovement = Number(btn.dataset.improvement);
-      updateReports();
+    improvementButtons.forEach(button => {
+      button.addEventListener("click", () => {
+        state.improvement = button.dataset.improvement;
+        updateUI();
+      });
     });
 
-    updateReports();
+    attachFitOnLoad(weltonFrame, weltonShell);
+    attachFitOnLoad(diaFrame, diaShell);
+
+    window.addEventListener("resize", () => {
+      fitIframe(weltonFrame, weltonShell);
+      fitIframe(diaFrame, diaShell);
+    });
+
+    updateUI();
   </script>
 </body>
 </html>
