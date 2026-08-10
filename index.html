@@ -110,9 +110,9 @@
     .iframe-shell iframe {
       display: block;
       border: 0;
-      transform-origin: top left;
       width: 100%;
       height: 900px;
+      transform-origin: top left;
     }
 
     @media (max-width: 900px) {
@@ -160,14 +160,14 @@
     <div class="reports">
       <div class="report">
         <h2 class="report-title" id="weltonTitle">Access to Five Points</h2>
-        <div class="iframe-shell" id="weltonShell">
+        <div class="iframe-shell">
           <iframe id="weltonFrame" scrolling="no" title="Access to Five Points report"></iframe>
         </div>
       </div>
 
       <div class="report">
         <h2 class="report-title" id="diaTitle">Access to DIA</h2>
-        <div class="iframe-shell" id="diaShell">
+        <div class="iframe-shell">
           <iframe id="diaFrame" scrolling="no" title="Access to DIA report"></iframe>
         </div>
       </div>
@@ -185,17 +185,93 @@
     const weltonFrame = document.getElementById("weltonFrame");
     const diaFrame = document.getElementById("diaFrame");
 
-    const weltonTitle = document.getElementById("weltonTitle");
-    const diaTitle = document.getElementById("diaTitle");
+    // Paste your actual report HTML here.
+    // These can be full standalone HTML documents or just body content.
+    const weltonHtmlByScenario = {
+      D: {
+        1: `<!doctype html>
+<html>
+  <body style="margin:0;font-family:Arial,Helvetica,sans-serif;">
+    <div style="padding:24px;">
+      <h2>Access to Five Points</h2>
+      <p>Paste the D Line / No Further Track Improvement report HTML here.</p>
+    </div>
+  </body>
+</html>`,
+        0.7: `<!doctype html>
+<html>
+  <body style="margin:0;font-family:Arial,Helvetica,sans-serif;">
+    <div style="padding:24px;">
+      <h2>Access to Five Points</h2>
+      <p>Paste the D Line / Reduction of In-Vehicle Travel Time report HTML here.</p>
+    </div>
+  </body>
+</html>`
+      },
+      L: {
+        1: `<!doctype html>
+<html>
+  <body style="margin:0;font-family:Arial,Helvetica,sans-serif;">
+    <div style="padding:24px;">
+      <h2>Access to Five Points</h2>
+      <p>Paste the L Line / No Further Track Improvement report HTML here.</p>
+    </div>
+  </body>
+</html>`,
+        0.7: `<!doctype html>
+<html>
+  <body style="margin:0;font-family:Arial,Helvetica,sans-serif;">
+    <div style="padding:24px;">
+      <h2>Access to Five Points</h2>
+      <p>Paste the L Line / Reduction of In-Vehicle Travel Time report HTML here.</p>
+    </div>
+  </body>
+</html>`
+      }
+    };
 
-    // Replace these with your real URLs or rendering logic.
-    function buildWeltonUrl(line, improvement) {
-      return `welton_report.html?line=${encodeURIComponent(line)}&improvement=${encodeURIComponent(improvement)}`;
-    }
-
-    function buildDiaUrl(line, improvement) {
-      return `dia_report.html?line=${encodeURIComponent(line)}&improvement=${encodeURIComponent(improvement)}`;
-    }
+    const diaHtmlByScenario = {
+      D: {
+        1: `<!doctype html>
+<html>
+  <body style="margin:0;font-family:Arial,Helvetica,sans-serif;">
+    <div style="padding:24px;">
+      <h2>Access to DIA</h2>
+      <p>Paste the D Line / No Further Track Improvement report HTML here.</p>
+    </div>
+  </body>
+</html>`,
+        0.7: `<!doctype html>
+<html>
+  <body style="margin:0;font-family:Arial,Helvetica,sans-serif;">
+    <div style="padding:24px;">
+      <h2>Access to DIA</h2>
+      <p>Paste the D Line / Reduction of In-Vehicle Travel Time report HTML here.</p>
+    </div>
+  </body>
+</html>`
+      },
+      L: {
+        1: `<!doctype html>
+<html>
+  <body style="margin:0;font-family:Arial,Helvetica,sans-serif;">
+    <div style="padding:24px;">
+      <h2>Access to DIA</h2>
+      <p>Paste the L Line / No Further Track Improvement report HTML here.</p>
+    </div>
+  </body>
+</html>`,
+        0.7: `<!doctype html>
+<html>
+  <body style="margin:0;font-family:Arial,Helvetica,sans-serif;">
+    <div style="padding:24px;">
+      <h2>Access to DIA</h2>
+      <p>Paste the L Line / Reduction of In-Vehicle Travel Time report HTML here.</p>
+    </div>
+  </body>
+</html>`
+      }
+    };
 
     function syncButtonStates() {
       document.querySelectorAll("#lineButtons button").forEach((btn) => {
@@ -203,17 +279,17 @@
       });
 
       document.querySelectorAll("#improvementButtons button").forEach((btn) => {
-        btn.classList.toggle("active", String(btn.dataset.improvement) === String(currentImprovement));
+        btn.classList.toggle("active", Number(btn.dataset.improvement) === currentImprovement);
       });
     }
 
     function updateReports() {
-      // If delta/track assumption changes in one figure, both figures are updated together here.
-      const weltonUrl = buildWeltonUrl(currentLine, currentImprovement);
-      const diaUrl = buildDiaUrl(currentLine, currentImprovement);
+      // Shared delta/state: both figures update together here.
+      const weltonHtml = weltonHtmlByScenario[currentLine][currentImprovement];
+      const diaHtml = diaHtmlByScenario[currentLine][currentImprovement];
 
-      weltonFrame.src = weltonUrl;
-      diaFrame.src = diaUrl;
+      weltonFrame.srcdoc = weltonHtml;
+      diaFrame.srcdoc = diaHtml;
 
       syncButtonStates();
     }
@@ -240,7 +316,6 @@
       setImprovement(Number(btn.dataset.improvement));
     });
 
-    // Initial load
     updateReports();
   </script>
 </body>
