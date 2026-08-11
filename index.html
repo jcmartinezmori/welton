@@ -138,6 +138,7 @@
 </head>
 
 <body>
+
   <div class="page">
 
     <header>
@@ -150,6 +151,7 @@
         <span class="control-label">Line</span>
 
         <div class="button-row" id="lineButtons">
+
           <button
             type="button"
             class="active"
@@ -164,13 +166,16 @@
           >
             L Line (Truncated D Line)
           </button>
+
         </div>
       </div>
+
 
       <div>
         <span class="control-label">Track assumption</span>
 
         <div class="button-row" id="improvementButtons">
+
           <button
             type="button"
             class="active"
@@ -185,56 +190,69 @@
           >
             Reduction of In-Vehicle Travel Time
           </button>
+
         </div>
       </div>
 
     </div>
 
+
     <div class="reports">
 
       <div class="report">
+
         <h2 class="report-title" id="weltonTitle">
           Access to Five Points
         </h2>
 
         <div class="iframe-shell" id="weltonShell">
+
           <iframe
             id="weltonFrame"
             scrolling="no"
             title="Access to Five Points report"
           ></iframe>
+
         </div>
+
       </div>
 
+
       <div class="report">
+
         <h2 class="report-title" id="diaTitle">
           Access to DIA
         </h2>
 
         <div class="iframe-shell" id="diaShell">
+
           <iframe
             id="diaFrame"
             scrolling="no"
             title="Access to DIA report"
           ></iframe>
+
         </div>
+
       </div>
 
     </div>
+
   </div>
 
+
   <script>
+
     /*
      * ============================================================
      * REPORT FILES
      * ============================================================
-     *
-     * These are the ORIGINAL paths from your working HTML.
-     * I have not changed them.
      */
 
     const REPORTS = {
+
       D: {
+
         "1": {
           welton:
             "output/figures/gtfs_2025-08-31_2026-01-03/welton/trip_durations_kappa_1.html",
@@ -250,9 +268,12 @@
           dia:
             "output/figures/gtfs_2025-08-31_2026-01-03/dia/trip_durations_kappa_0.7.html"
         }
+
       },
 
+
       L: {
+
         "1": {
           welton:
             "output/figures/gtfs_2026-01-04_2026-06-06/welton/trip_durations_kappa_1.html",
@@ -268,13 +289,15 @@
           dia:
             "output/figures/gtfs_2026-01-04_2026-06-06/dia/trip_durations_kappa_0.7.html"
         }
+
       }
+
     };
 
 
     /*
      * ============================================================
-     * CURRENT STATE
+     * STATE
      * ============================================================
      */
 
@@ -317,34 +340,46 @@
 
     /*
      * ============================================================
-     * IFRAME SIZING
+     * IFRAME FITTING
      * ============================================================
      */
 
     function fitIframe(iframe, shell) {
-      try {
-        const doc = iframe.contentWindow.document;
 
-        const html = doc.documentElement;
-        const body = doc.body;
+      try {
+
+        const doc =
+          iframe.contentWindow.document;
+
+        if (!doc) {
+          return;
+        }
+
+        const html =
+          doc.documentElement;
+
+        const body =
+          doc.body;
 
         if (!html || !body) {
           return;
         }
 
-        const contentWidth = Math.max(
-          body.scrollWidth,
-          body.offsetWidth,
-          html.scrollWidth,
-          html.offsetWidth
-        );
+        const contentWidth =
+          Math.max(
+            body.scrollWidth,
+            body.offsetWidth,
+            html.scrollWidth,
+            html.offsetWidth
+          );
 
-        const contentHeight = Math.max(
-          body.scrollHeight,
-          body.offsetHeight,
-          html.scrollHeight,
-          html.offsetHeight
-        );
+        const contentHeight =
+          Math.max(
+            body.scrollHeight,
+            body.offsetHeight,
+            html.scrollHeight,
+            html.offsetHeight
+          );
 
         if (!contentWidth || !contentHeight) {
           return;
@@ -354,7 +389,10 @@
           shell.clientWidth || window.innerWidth;
 
         const scale =
-          Math.min(1, shellWidth / contentWidth);
+          Math.min(
+            1,
+            shellWidth / contentWidth
+          );
 
         iframe.style.width =
           contentWidth + "px";
@@ -368,32 +406,28 @@
         shell.style.height =
           (contentHeight * scale) + "px";
 
-      } catch (err) {
+      } catch (error) {
+
         console.warn(
           "Could not fit iframe:",
-          err
+          error
         );
+
       }
+
     }
 
 
     /*
      * ============================================================
-     * SYNCHRONIZE THE TWO FIGURES
+     * FIND THE PLOTLY GRAPH
      * ============================================================
-     *
-     * The embedded reports are Plotly HTML files.
-     *
-     * When one figure is interactively changed (for example,
-     * a relayout / delta movement), we send that same Plotly
-     * change to the other figure.
      */
 
-    let syncingPlots = false;
-
-
     function getPlotlyGraph(iframe) {
+
       try {
+
         const doc =
           iframe.contentWindow.document;
 
@@ -401,28 +435,49 @@
           return null;
         }
 
-        /*
-         * Plotly HTML output normally contains one main
-         * div.graph-div.
-         */
-        const graph =
+        return (
           doc.querySelector(".js-plotly-plot") ||
-          doc.querySelector(".plotly-graph-div");
+          doc.querySelector(".plotly-graph-div")
+        );
 
-        return graph || null;
+      } catch (error) {
 
-      } catch (err) {
+        console.warn(
+          "Could not access Plotly graph:",
+          error
+        );
+
         return null;
       }
+
     }
 
 
-    function syncPlotlyRelayout(
-      sourceIframe,
-      targetIframe,
+    /*
+     * ============================================================
+     * SYNCHRONIZATION STATE
+     * ============================================================
+     *
+     * This prevents the change we send to the second graph from
+     * immediately triggering another change back to the first.
+     */
+
+    let isSynchronizing = false;
+
+
+    /*
+     * ============================================================
+     * COPY PLOTLY RELAYOUT
+     * ============================================================
+     */
+
+    function copyRelayout(
+      sourceFrame,
+      targetFrame,
       eventData
     ) {
-      if (syncingPlots) {
+
+      if (isSynchronizing) {
         return;
       }
 
@@ -430,139 +485,358 @@
         return;
       }
 
+      const sourceGraph =
+        getPlotlyGraph(sourceFrame);
+
       const targetGraph =
-        getPlotlyGraph(targetIframe);
+        getPlotlyGraph(targetFrame);
 
-      if (!targetGraph) {
+      if (!sourceGraph || !targetGraph) {
         return;
       }
 
-      const plotly =
-        targetIframe.contentWindow.Plotly;
+      const targetPlotly =
+        targetFrame.contentWindow.Plotly;
 
-      if (!plotly) {
+      if (!targetPlotly) {
         return;
       }
 
-      syncingPlots = true;
+
+      /*
+       * ----------------------------------------------------------
+       * IMPORTANT:
+       *
+       * Plotly can report a drag as:
+       *
+       * shapes[0].x0
+       * shapes[0].x1
+       * shapes[1].x0
+       * ...
+       *
+       * or as xaxis range changes.
+       *
+       * We copy the complete relayout event, so the same
+       * interactive movement gets applied to the second chart.
+       * ----------------------------------------------------------
+       */
+
+      isSynchronizing = true;
 
       try {
-        plotly.relayout(
+
+        targetPlotly.relayout(
           targetGraph,
           eventData
         );
-      } catch (err) {
+
+      } catch (error) {
+
         console.warn(
-          "Could not synchronize Plotly figures:",
-          err
+          "Plotly relayout synchronization failed:",
+          error
         );
+
       }
 
-      /*
-       * Small timeout prevents the Plotly event generated
-       * by relayout() from immediately bouncing back and
-       * forth between the two figures.
-       */
       setTimeout(() => {
-        syncingPlots = false;
-      }, 50);
-    }
+        isSynchronizing = false;
+      }, 100);
 
-
-    function attachPlotSync(
-      sourceIframe,
-      targetIframe
-    ) {
-      try {
-        const doc =
-          sourceIframe.contentWindow.document;
-
-        const graph =
-          getPlotlyGraph(sourceIframe);
-
-        if (!doc || !graph) {
-          return;
-        }
-
-        /*
-         * Plotly's relayout event captures interactive
-         * changes to axes, annotations, shapes, etc.
-         */
-        if (
-          typeof graph.on === "function"
-        ) {
-          graph.on(
-            "plotly_relayout",
-            function(eventData) {
-              syncPlotlyRelayout(
-                sourceIframe,
-                targetIframe,
-                eventData
-              );
-            }
-          );
-        }
-
-      } catch (err) {
-        console.warn(
-          "Could not attach Plotly synchronization:",
-          err
-        );
-      }
     }
 
 
     /*
      * ============================================================
-     * LOAD HANDLER
+     * COPY PLOTLY RESTYLE
+     * ============================================================
+     *
+     * Some interactive Plotly controls use restyle rather than
+     * relayout.
+     */
+
+    function copyRestyle(
+      sourceFrame,
+      targetFrame,
+      data,
+      indices
+    ) {
+
+      if (isSynchronizing) {
+        return;
+      }
+
+      if (!data) {
+        return;
+      }
+
+      const targetGraph =
+        getPlotlyGraph(targetFrame);
+
+      if (!targetGraph) {
+        return;
+      }
+
+      const targetPlotly =
+        targetFrame.contentWindow.Plotly;
+
+      if (!targetPlotly) {
+        return;
+      }
+
+      isSynchronizing = true;
+
+      try {
+
+        targetPlotly.restyle(
+          targetGraph,
+          data,
+          indices
+        );
+
+      } catch (error) {
+
+        console.warn(
+          "Plotly restyle synchronization failed:",
+          error
+        );
+
+      }
+
+      setTimeout(() => {
+        isSynchronizing = false;
+      }, 100);
+
+    }
+
+
+    /*
+     * ============================================================
+     * ATTACH PLOTLY EVENT LISTENERS
      * ============================================================
      */
 
-    function attachIframeLoad(
+    function attachPlotlySynchronization(
+      sourceFrame,
+      targetFrame
+    ) {
+
+      const graph =
+        getPlotlyGraph(sourceFrame);
+
+      if (!graph) {
+        return false;
+      }
+
+      /*
+       * Avoid attaching listeners multiple times.
+       */
+
+      if (graph.__deltaSyncAttached) {
+        return true;
+      }
+
+      graph.__deltaSyncAttached = true;
+
+
+      /*
+       * Dragging shapes / delta markers / axes.
+       */
+
+      if (
+        typeof graph.on === "function"
+      ) {
+
+        graph.on(
+          "plotly_relayout",
+          function(eventData) {
+
+            copyRelayout(
+              sourceFrame,
+              targetFrame,
+              eventData
+            );
+
+          }
+        );
+
+
+        /*
+         * Controls that modify trace properties.
+         */
+
+        graph.on(
+          "plotly_restyle",
+          function(data, indices) {
+
+            copyRestyle(
+              sourceFrame,
+              targetFrame,
+              data,
+              indices
+            );
+
+          }
+        );
+
+
+        /*
+         * A generic update event can occur for some Plotly
+         * controls. We don't copy it blindly because its payload
+         * can differ between Plotly versions.
+         */
+        graph.on(
+          "plotly_update",
+          function() {
+
+            /*
+             * Usually the actual change has already generated
+             * relayout/restyle above.
+             */
+          }
+        );
+
+      }
+
+      return true;
+    }
+
+
+    /*
+     * ============================================================
+     * WAIT UNTIL PLOTLY EXISTS
+     * ============================================================
+     *
+     * Plotly HTML files often load Plotly asynchronously.
+     * Therefore attaching the listener immediately on iframe
+     * load isn't reliable.
+     */
+
+    function waitForPlotly(
+      sourceFrame,
+      targetFrame,
+      attemptsLeft = 50
+    ) {
+
+      if (attemptsLeft <= 0) {
+
+        console.warn(
+          "Could not find Plotly graph for synchronization."
+        );
+
+        return;
+      }
+
+      try {
+
+        const graph =
+          getPlotlyGraph(sourceFrame);
+
+        const plotly =
+          sourceFrame.contentWindow.Plotly;
+
+        if (
+          graph &&
+          plotly &&
+          typeof graph.on === "function"
+        ) {
+
+          attachPlotlySynchronization(
+            sourceFrame,
+            targetFrame
+          );
+
+          return;
+        }
+
+      } catch (error) {
+        // Continue polling.
+      }
+
+      setTimeout(
+        () => {
+
+          waitForPlotly(
+            sourceFrame,
+            targetFrame,
+            attemptsLeft - 1
+          );
+
+        },
+        100
+      );
+
+    }
+
+
+    /*
+     * ============================================================
+     * IFRAME LOAD SETUP
+     * ============================================================
+     */
+
+    function setupIframe(
       iframe,
       shell,
-      otherIframe
+      otherFrame
     ) {
+
       iframe.addEventListener(
         "load",
         () => {
 
           /*
-           * The Plotly HTML may still be rendering when
-           * the iframe's load event fires, so try several
-           * times.
+           * Fit the figure.
            */
 
-          const attempts = [
-            0,
-            100,
-            400,
-            1000
-          ];
+          fitIframe(
+            iframe,
+            shell
+          );
 
-          attempts.forEach(delay => {
-            setTimeout(() => {
+          setTimeout(() => {
+            fitIframe(
+              iframe,
+              shell
+            );
+          }, 100);
 
-              fitIframe(
-                iframe,
-                shell
-              );
+          setTimeout(() => {
+            fitIframe(
+              iframe,
+              shell
+            );
+          }, 500);
 
-              attachPlotSync(
-                iframe,
-                otherIframe
-              );
-
-            }, delay);
-          });
+          setTimeout(() => {
+            fitIframe(
+              iframe,
+              shell
+            );
+          }, 1000);
 
 
           /*
-           * Watch for changes in the embedded report's
-           * dimensions.
+           * Most important part:
+           *
+           * Wait until the embedded Plotly graph exists,
+           * then connect its interactive events to the other
+           * figure.
+           */
+
+          waitForPlotly(
+            iframe,
+            otherFrame
+          );
+
+
+          /*
+           * Keep the iframe height synchronized with its
+           * internal document.
            */
 
           try {
+
             const doc =
               iframe.contentWindow.document;
 
@@ -571,12 +845,15 @@
               doc.documentElement &&
               typeof ResizeObserver !== "undefined"
             ) {
+
               const observer =
                 new ResizeObserver(() => {
+
                   fitIframe(
                     iframe,
                     shell
                   );
+
                 });
 
               observer.observe(
@@ -588,20 +865,24 @@
               );
             }
 
-          } catch (err) {
+          } catch (error) {
+
             console.warn(
-              "Resize observer unavailable:",
-              err
+              "Could not attach iframe ResizeObserver:",
+              error
             );
+
           }
+
         }
       );
+
     }
 
 
     /*
      * ============================================================
-     * UPDATE THE TWO REPORTS
+     * LOAD / CHANGE SCENARIO
      * ============================================================
      */
 
@@ -616,11 +897,8 @@
 
 
       /*
-       * IMPORTANT:
-       *
-       * Both reports are always changed together.
-       * This is the part that keeps the two figures
-       * on the same scenario.
+       * Both figures are always changed together when the
+       * scenario buttons are changed.
        */
 
       weltonFrame.src =
@@ -631,7 +909,7 @@
 
 
       /*
-       * Update the headings.
+       * Titles.
        */
 
       weltonTitle.textContent =
@@ -642,33 +920,39 @@
 
 
       /*
-       * Update active buttons.
+       * Buttons.
        */
 
       lineButtons.forEach(button => {
+
         button.classList.toggle(
           "active",
           button.dataset.line === state.line
         );
+
       });
 
       improvementButtons.forEach(button => {
+
         button.classList.toggle(
           "active",
           button.dataset.improvement ===
           state.improvement
         );
+
       });
+
     }
 
 
     /*
      * ============================================================
-     * BUTTON EVENTS
+     * SCENARIO BUTTONS
      * ============================================================
      */
 
     lineButtons.forEach(button => {
+
       button.addEventListener(
         "click",
         () => {
@@ -677,12 +961,15 @@
             button.dataset.line;
 
           updateUI();
+
         }
       );
+
     });
 
 
     improvementButtons.forEach(button => {
+
       button.addEventListener(
         "click",
         () => {
@@ -691,24 +978,26 @@
             button.dataset.improvement;
 
           updateUI();
+
         }
       );
+
     });
 
 
     /*
      * ============================================================
-     * CONNECT IFRAME LOAD EVENTS
+     * SET UP IFRAME LISTENERS
      * ============================================================
      */
 
-    attachIframeLoad(
+    setupIframe(
       weltonFrame,
       weltonShell,
       diaFrame
     );
 
-    attachIframeLoad(
+    setupIframe(
       diaFrame,
       diaShell,
       weltonFrame
@@ -734,6 +1023,7 @@
           diaFrame,
           diaShell
         );
+
       }
     );
 
@@ -745,6 +1035,8 @@
      */
 
     updateUI();
+
   </script>
+
 </body>
 </html>
