@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Completed Line Reports</title>
+
+  <title>Operational Scenarios under a Completed D Line</title>
+
   <style>
     * {
       box-sizing: border-box;
@@ -137,96 +139,198 @@
 
 <body>
   <div class="page">
+
     <header>
-      <h1>Completed D and L Line Reports</h1>
-      <p class="subtitle">
-        Select the line and track assumption. Welton is shown first, followed by DIA.
-      </p>
+      <h1>Operational Scenarios under a Completed D Line</h1>
     </header>
 
     <div class="controls">
+
       <div>
         <span class="control-label">Line</span>
+
         <div class="button-row" id="lineButtons">
-          <button type="button" class="active" data-line="D">D Line</button>
-          <button type="button" data-line="L">L Line</button>
+          <button
+            type="button"
+            class="active"
+            data-line="D"
+          >
+            Holiday Train (Original D Line)
+          </button>
+
+          <button
+            type="button"
+            data-line="L"
+          >
+            L Line (Truncated D Line)
+          </button>
         </div>
       </div>
 
       <div>
         <span class="control-label">Track assumption</span>
+
         <div class="button-row" id="improvementButtons">
-          <button type="button" class="active" data-improvement="1">No Track Improvement</button>
-          <button type="button" data-improvement="0.7">With Track Improvement</button>
+          <button
+            type="button"
+            class="active"
+            data-improvement="1"
+          >
+            No Further Track Improvement
+          </button>
+
+          <button
+            type="button"
+            data-improvement="0.7"
+          >
+            Reduction of In-Vehicle Travel Time
+          </button>
         </div>
       </div>
+
     </div>
 
     <div class="reports">
+
       <div class="report">
-        <h2 class="report-title" id="weltonTitle">Welton</h2>
+        <h2 class="report-title" id="weltonTitle">
+          Access to Five Points
+        </h2>
+
         <div class="iframe-shell" id="weltonShell">
-          <iframe id="weltonFrame" scrolling="no" title="Welton report"></iframe>
+          <iframe
+            id="weltonFrame"
+            scrolling="no"
+            title="Access to Five Points report"
+          ></iframe>
         </div>
       </div>
 
       <div class="report">
-        <h2 class="report-title" id="diaTitle">DIA</h2>
+        <h2 class="report-title" id="diaTitle">
+          Access to DIA
+        </h2>
+
         <div class="iframe-shell" id="diaShell">
-          <iframe id="diaFrame" scrolling="no" title="DIA report"></iframe>
+          <iframe
+            id="diaFrame"
+            scrolling="no"
+            title="Access to DIA report"
+          ></iframe>
         </div>
       </div>
+
     </div>
   </div>
 
   <script>
+    /*
+     * ============================================================
+     * REPORT FILES
+     * ============================================================
+     *
+     * These are the ORIGINAL paths from your working HTML.
+     * I have not changed them.
+     */
+
     const REPORTS = {
       D: {
         "1": {
-          welton: "output/figures/gtfs_2025-08-31_2026-01-03/welton/trip_durations_kappa_1.html",
-          dia: "output/figures/gtfs_2025-08-31_2026-01-03/dia/trip_durations_kappa_1.html"
+          welton:
+            "output/figures/gtfs_2025-08-31_2026-01-03/welton/trip_durations_kappa_1.html",
+
+          dia:
+            "output/figures/gtfs_2025-08-31_2026-01-03/dia/trip_durations_kappa_1.html"
         },
+
         "0.7": {
-          welton: "output/figures/gtfs_2025-08-31_2026-01-03/welton/trip_durations_kappa_0.7.html",
-          dia: "output/figures/gtfs_2025-08-31_2026-01-03/dia/trip_durations_kappa_0.7.html"
+          welton:
+            "output/figures/gtfs_2025-08-31_2026-01-03/welton/trip_durations_kappa_0.7.html",
+
+          dia:
+            "output/figures/gtfs_2025-08-31_2026-01-03/dia/trip_durations_kappa_0.7.html"
         }
       },
+
       L: {
         "1": {
-          welton: "output/figures/gtfs_2026-01-04_2026-06-06/welton/trip_durations_kappa_1.html",
-          dia: "output/figures/gtfs_2026-01-04_2026-06-06/dia/trip_durations_kappa_1.html"
+          welton:
+            "output/figures/gtfs_2026-01-04_2026-06-06/welton/trip_durations_kappa_1.html",
+
+          dia:
+            "output/figures/gtfs_2026-01-04_2026-06-06/dia/trip_durations_kappa_1.html"
         },
+
         "0.7": {
-          welton: "output/figures/gtfs_2026-01-04_2026-06-06/welton/trip_durations_kappa_0.7.html",
-          dia: "output/figures/gtfs_2026-01-04_2026-06-06/dia/trip_durations_kappa_0.7.html"
+          welton:
+            "output/figures/gtfs_2026-01-04_2026-06-06/welton/trip_durations_kappa_0.7.html",
+
+          dia:
+            "output/figures/gtfs_2026-01-04_2026-06-06/dia/trip_durations_kappa_0.7.html"
         }
       }
     };
 
-    const LABELS = {
-      line: { D: "D Line", L: "L Line" },
-      improvement: { "1": "No Track Improvement", "0.7": "With Track Improvement" }
-    };
+
+    /*
+     * ============================================================
+     * CURRENT STATE
+     * ============================================================
+     */
 
     const state = {
       line: "D",
       improvement: "1"
     };
 
-    const lineButtons = document.querySelectorAll("#lineButtons button");
-    const improvementButtons = document.querySelectorAll("#improvementButtons button");
-    const weltonFrame = document.getElementById("weltonFrame");
-    const diaFrame = document.getElementById("diaFrame");
-    const weltonShell = document.getElementById("weltonShell");
-    const diaShell = document.getElementById("diaShell");
-    const weltonTitle = document.getElementById("weltonTitle");
-    const diaTitle = document.getElementById("diaTitle");
+
+    /*
+     * ============================================================
+     * ELEMENTS
+     * ============================================================
+     */
+
+    const lineButtons =
+      document.querySelectorAll("#lineButtons button");
+
+    const improvementButtons =
+      document.querySelectorAll("#improvementButtons button");
+
+    const weltonFrame =
+      document.getElementById("weltonFrame");
+
+    const diaFrame =
+      document.getElementById("diaFrame");
+
+    const weltonShell =
+      document.getElementById("weltonShell");
+
+    const diaShell =
+      document.getElementById("diaShell");
+
+    const weltonTitle =
+      document.getElementById("weltonTitle");
+
+    const diaTitle =
+      document.getElementById("diaTitle");
+
+
+    /*
+     * ============================================================
+     * IFRAME SIZING
+     * ============================================================
+     */
 
     function fitIframe(iframe, shell) {
       try {
         const doc = iframe.contentWindow.document;
+
         const html = doc.documentElement;
         const body = doc.body;
+
+        if (!html || !body) {
+          return;
+        }
 
         const contentWidth = Math.max(
           body.scrollWidth,
@@ -242,81 +346,403 @@
           html.offsetHeight
         );
 
-        const shellWidth = shell.clientWidth || window.innerWidth;
-        const scale = Math.min(1, shellWidth / contentWidth);
+        if (!contentWidth || !contentHeight) {
+          return;
+        }
 
-        iframe.style.width = contentWidth + "px";
-        iframe.style.height = contentHeight + "px";
-        iframe.style.transform = `scale(${scale})`;
+        const shellWidth =
+          shell.clientWidth || window.innerWidth;
 
-        shell.style.height = (contentHeight * scale) + "px";
+        const scale =
+          Math.min(1, shellWidth / contentWidth);
+
+        iframe.style.width =
+          contentWidth + "px";
+
+        iframe.style.height =
+          contentHeight + "px";
+
+        iframe.style.transform =
+          `scale(${scale})`;
+
+        shell.style.height =
+          (contentHeight * scale) + "px";
+
       } catch (err) {
-        console.warn("Could not fit iframe:", err);
+        console.warn(
+          "Could not fit iframe:",
+          err
+        );
       }
     }
 
-    function attachFitOnLoad(iframe, shell) {
-      iframe.addEventListener("load", () => {
-        const runFit = () => fitIframe(iframe, shell);
 
-        runFit();
-        setTimeout(runFit, 100);
-        setTimeout(runFit, 400);
-        setTimeout(runFit, 1000);
+    /*
+     * ============================================================
+     * SYNCHRONIZE THE TWO FIGURES
+     * ============================================================
+     *
+     * The embedded reports are Plotly HTML files.
+     *
+     * When one figure is interactively changed (for example,
+     * a relayout / delta movement), we send that same Plotly
+     * change to the other figure.
+     */
 
-        try {
-          const doc = iframe.contentWindow.document;
-          const observer = new ResizeObserver(runFit);
-          observer.observe(doc.body);
-          observer.observe(doc.documentElement);
-        } catch (err) {
-          console.warn("Resize observer unavailable for iframe:", err);
+    let syncingPlots = false;
+
+
+    function getPlotlyGraph(iframe) {
+      try {
+        const doc =
+          iframe.contentWindow.document;
+
+        if (!doc) {
+          return null;
         }
-      });
+
+        /*
+         * Plotly HTML output normally contains one main
+         * div.graph-div.
+         */
+        const graph =
+          doc.querySelector(".js-plotly-plot") ||
+          doc.querySelector(".plotly-graph-div");
+
+        return graph || null;
+
+      } catch (err) {
+        return null;
+      }
     }
 
-    function updateUI() {
-      const selected = REPORTS[state.line][state.improvement];
 
-      weltonFrame.src = selected.welton;
-      diaFrame.src = selected.dia;
+    function syncPlotlyRelayout(
+      sourceIframe,
+      targetIframe,
+      eventData
+    ) {
+      if (syncingPlots) {
+        return;
+      }
+
+      if (!eventData) {
+        return;
+      }
+
+      const targetGraph =
+        getPlotlyGraph(targetIframe);
+
+      if (!targetGraph) {
+        return;
+      }
+
+      const plotly =
+        targetIframe.contentWindow.Plotly;
+
+      if (!plotly) {
+        return;
+      }
+
+      syncingPlots = true;
+
+      try {
+        plotly.relayout(
+          targetGraph,
+          eventData
+        );
+      } catch (err) {
+        console.warn(
+          "Could not synchronize Plotly figures:",
+          err
+        );
+      }
+
+      /*
+       * Small timeout prevents the Plotly event generated
+       * by relayout() from immediately bouncing back and
+       * forth between the two figures.
+       */
+      setTimeout(() => {
+        syncingPlots = false;
+      }, 50);
+    }
+
+
+    function attachPlotSync(
+      sourceIframe,
+      targetIframe
+    ) {
+      try {
+        const doc =
+          sourceIframe.contentWindow.document;
+
+        const graph =
+          getPlotlyGraph(sourceIframe);
+
+        if (!doc || !graph) {
+          return;
+        }
+
+        /*
+         * Plotly's relayout event captures interactive
+         * changes to axes, annotations, shapes, etc.
+         */
+        if (
+          typeof graph.on === "function"
+        ) {
+          graph.on(
+            "plotly_relayout",
+            function(eventData) {
+              syncPlotlyRelayout(
+                sourceIframe,
+                targetIframe,
+                eventData
+              );
+            }
+          );
+        }
+
+      } catch (err) {
+        console.warn(
+          "Could not attach Plotly synchronization:",
+          err
+        );
+      }
+    }
+
+
+    /*
+     * ============================================================
+     * LOAD HANDLER
+     * ============================================================
+     */
+
+    function attachIframeLoad(
+      iframe,
+      shell,
+      otherIframe
+    ) {
+      iframe.addEventListener(
+        "load",
+        () => {
+
+          /*
+           * The Plotly HTML may still be rendering when
+           * the iframe's load event fires, so try several
+           * times.
+           */
+
+          const attempts = [
+            0,
+            100,
+            400,
+            1000
+          ];
+
+          attempts.forEach(delay => {
+            setTimeout(() => {
+
+              fitIframe(
+                iframe,
+                shell
+              );
+
+              attachPlotSync(
+                iframe,
+                otherIframe
+              );
+
+            }, delay);
+          });
+
+
+          /*
+           * Watch for changes in the embedded report's
+           * dimensions.
+           */
+
+          try {
+            const doc =
+              iframe.contentWindow.document;
+
+            if (
+              doc.body &&
+              doc.documentElement &&
+              typeof ResizeObserver !== "undefined"
+            ) {
+              const observer =
+                new ResizeObserver(() => {
+                  fitIframe(
+                    iframe,
+                    shell
+                  );
+                });
+
+              observer.observe(
+                doc.body
+              );
+
+              observer.observe(
+                doc.documentElement
+              );
+            }
+
+          } catch (err) {
+            console.warn(
+              "Resize observer unavailable:",
+              err
+            );
+          }
+        }
+      );
+    }
+
+
+    /*
+     * ============================================================
+     * UPDATE THE TWO REPORTS
+     * ============================================================
+     */
+
+    function updateUI() {
+
+      const selected =
+        REPORTS[
+          state.line
+        ][
+          state.improvement
+        ];
+
+
+      /*
+       * IMPORTANT:
+       *
+       * Both reports are always changed together.
+       * This is the part that keeps the two figures
+       * on the same scenario.
+       */
+
+      weltonFrame.src =
+        selected.welton;
+
+      diaFrame.src =
+        selected.dia;
+
+
+      /*
+       * Update the headings.
+       */
 
       weltonTitle.textContent =
-        `${LABELS.line[state.line]} · ${LABELS.improvement[state.improvement]} · Welton`;
+        "Access to Five Points";
 
       diaTitle.textContent =
-        `${LABELS.line[state.line]} · ${LABELS.improvement[state.improvement]} · DIA`;
+        "Access to DIA";
+
+
+      /*
+       * Update active buttons.
+       */
 
       lineButtons.forEach(button => {
-        button.classList.toggle("active", button.dataset.line === state.line);
+        button.classList.toggle(
+          "active",
+          button.dataset.line === state.line
+        );
       });
 
       improvementButtons.forEach(button => {
-        button.classList.toggle("active", button.dataset.improvement === state.improvement);
+        button.classList.toggle(
+          "active",
+          button.dataset.improvement ===
+          state.improvement
+        );
       });
     }
 
+
+    /*
+     * ============================================================
+     * BUTTON EVENTS
+     * ============================================================
+     */
+
     lineButtons.forEach(button => {
-      button.addEventListener("click", () => {
-        state.line = button.dataset.line;
-        updateUI();
-      });
+      button.addEventListener(
+        "click",
+        () => {
+
+          state.line =
+            button.dataset.line;
+
+          updateUI();
+        }
+      );
     });
+
 
     improvementButtons.forEach(button => {
-      button.addEventListener("click", () => {
-        state.improvement = button.dataset.improvement;
-        updateUI();
-      });
+      button.addEventListener(
+        "click",
+        () => {
+
+          state.improvement =
+            button.dataset.improvement;
+
+          updateUI();
+        }
+      );
     });
 
-    attachFitOnLoad(weltonFrame, weltonShell);
-    attachFitOnLoad(diaFrame, diaShell);
 
-    window.addEventListener("resize", () => {
-      fitIframe(weltonFrame, weltonShell);
-      fitIframe(diaFrame, diaShell);
-    });
+    /*
+     * ============================================================
+     * CONNECT IFRAME LOAD EVENTS
+     * ============================================================
+     */
+
+    attachIframeLoad(
+      weltonFrame,
+      weltonShell,
+      diaFrame
+    );
+
+    attachIframeLoad(
+      diaFrame,
+      diaShell,
+      weltonFrame
+    );
+
+
+    /*
+     * ============================================================
+     * WINDOW RESIZE
+     * ============================================================
+     */
+
+    window.addEventListener(
+      "resize",
+      () => {
+
+        fitIframe(
+          weltonFrame,
+          weltonShell
+        );
+
+        fitIframe(
+          diaFrame,
+          diaShell
+        );
+      }
+    );
+
+
+    /*
+     * ============================================================
+     * INITIAL LOAD
+     * ============================================================
+     */
 
     updateUI();
   </script>
