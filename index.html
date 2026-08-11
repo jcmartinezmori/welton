@@ -35,11 +35,6 @@
       font-size: 2rem;
     }
 
-    .subtitle {
-      margin: 0;
-      color: #6b7280;
-    }
-
     .controls {
       display: flex;
       gap: 30px;
@@ -201,7 +196,7 @@
 
       <div class="report">
 
-        <h2 class="report-title" id="weltonTitle">
+        <h2 class="report-title">
           Access to Five Points
         </h2>
 
@@ -220,7 +215,7 @@
 
       <div class="report">
 
-        <h2 class="report-title" id="diaTitle">
+        <h2 class="report-title">
           Access to DIA
         </h2>
 
@@ -245,7 +240,7 @@
 
     /*
      * ============================================================
-     * REPORT FILES
+     * ORIGINAL REPORT FILES
      * ============================================================
      */
 
@@ -303,13 +298,14 @@
 
     const state = {
       line: "D",
-      improvement: "1"
+      improvement: "1",
+      delta: "0.0"
     };
 
 
     /*
      * ============================================================
-     * ELEMENTS
+     * DOM ELEMENTS
      * ============================================================
      */
 
@@ -331,16 +327,10 @@
     const diaShell =
       document.getElementById("diaShell");
 
-    const weltonTitle =
-      document.getElementById("weltonTitle");
-
-    const diaTitle =
-      document.getElementById("diaTitle");
-
 
     /*
      * ============================================================
-     * IFRAME FITTING
+     * IFRAME SIZING
      * ============================================================
      */
 
@@ -420,7 +410,7 @@
 
     /*
      * ============================================================
-     * FIND THE PLOTLY GRAPH
+     * GET THE PLOTLY GRAPH
      * ============================================================
      */
 
@@ -436,330 +426,359 @@
         }
 
         return (
-          doc.querySelector(".js-plotly-plot") ||
-          doc.querySelector(".plotly-graph-div")
+          doc.querySelector(".plotly-graph-div") ||
+          doc.querySelector(".js-plotly-plot")
         );
 
       } catch (error) {
 
-        console.warn(
-          "Could not access Plotly graph:",
-          error
-        );
+        return null;
 
+      }
+
+    }
+
+
+    /*
+     * ============================================================
+     * GET THE OTHER GRAPH
+     * ============================================================
+     */
+
+    function getOtherFrame(frame) {
+
+      if (frame === weltonFrame) {
+        return diaFrame;
+      }
+
+      return weltonFrame;
+    }
+
+
+    /*
+     * ============================================================
+     * DELTA SYNCHRONIZATION
+     * ============================================================
+     *
+     * Your actual report uses:
+     *
+     *   layout.sliders[0]
+     *
+     * with steps labelled:
+     *
+     *   0.0
+     *   1.0
+     *   2.0
+     *   ...
+     *   14.0
+     *
+     * and each step uses:
+     *
+     *   method: "update"
+     *
+     * to change trace visibility.
+     *
+     * We therefore synchronize the STEP, not a shape or axis.
+     */
+
+    let syncingDelta = false;
+
+
+    function getSlider(graph) {
+
+      if (
+        !graph ||
+        !graph.layout ||
+        !graph.layout.sliders ||
+        !graph.layout.sliders.length
+      ) {
         return null;
       }
 
+      return graph.layout.sliders[0];
+
     }
 
 
-    /*
-     * ============================================================
-     * SYNCHRONIZATION STATE
-     * ============================================================
-     *
-     * This prevents the change we send to the second graph from
-     * immediately triggering another change back to the first.
-     */
+    function findDeltaStep(graph, deltaLabel) {
 
-    let isSynchronizing = false;
+      const slider =
+        getSlider(graph);
+
+      if (!slider || !slider.steps) {
+        return -1;
+      }
+
+      return slider.steps.findIndex(
+        step =>
+          String(step.label) ===
+          String(deltaLabel)
+      );
+
+    }
 
 
-    /*
-     * ============================================================
-     * COPY PLOTLY RELAYOUT
-     * ============================================================
-     */
+    function applyDeltaToFrame(frame, deltaLabel) {
 
-    function copyRelayout(
-      sourceFrame,
-      targetFrame,
-      eventData
-    ) {
+      const graph =
+        getPlotlyGraph(frame);
 
-      if (isSynchronizing) {
+      if (!graph) {
         return;
       }
 
-      if (!eventData) {
+      const plotly =
+        frame.contentWindow.Plotly;
+
+      if (!plotly) {
         return;
       }
 
-      const sourceGraph =
-        getPlotlyGraph(sourceFrame);
+      const slider =
+        getSlider(graph);
 
-      const targetGraph =
-        getPlotlyGraph(targetFrame);
-
-      if (!sourceGraph || !targetGraph) {
+      if (!slider) {
         return;
       }
 
-      const targetPlotly =
-        targetFrame.contentWindow.Plotly;
+      const targetIndex =
+        findDeltaStep(
+          graph,
+          deltaLabel
+        );
 
-      if (!targetPlotly) {
+      if (targetIndex < 0) {
+        console.warn(
+          "Could not find delta step:",
+          deltaLabel
+        );
         return;
       }
+
+      const targetStep =
+        slider.steps[targetIndex];
 
 
       /*
-       * ----------------------------------------------------------
-       * IMPORTANT:
+       * Execute the SAME Plotly update that the target
+       * figure would execute if its own slider were moved.
        *
-       * Plotly can report a drag as:
-       *
-       * shapes[0].x0
-       * shapes[0].x1
-       * shapes[1].x0
-       * ...
-       *
-       * or as xaxis range changes.
-       *
-       * We copy the complete relayout event, so the same
-       * interactive movement gets applied to the second chart.
-       * ----------------------------------------------------------
+       * This is much more reliable than copying the
+       * source figure's visibility array because the two
+       * reports may have different underlying data.
        */
 
-      isSynchronizing = true;
-
       try {
 
-        targetPlotly.relayout(
-          targetGraph,
-          eventData
+        if (
+          targetStep.method === "update" &&
+          Array.isArray(targetStep.args)
+        ) {
+
+          const dataUpdate =
+            targetStep.args[0] || {};
+
+          const layoutUpdate =
+            targetStep.args[1] || {};
+
+          plotly.update(
+            graph,
+            dataUpdate,
+            layoutUpdate
+          );
+
+        }
+
+        /*
+         * Move the actual slider handle in the target
+         * figure so the displayed delta also changes.
+         */
+
+        plotly.relayout(
+          graph,
+          {
+            "sliders[0].active":
+              targetIndex
+          }
         );
 
       } catch (error) {
 
-        console.warn(
-          "Plotly relayout synchronization failed:",
+        console.error(
+          "Could not apply synchronized delta:",
           error
         );
 
       }
 
-      setTimeout(() => {
-        isSynchronizing = false;
-      }, 100);
-
     }
 
 
-    /*
-     * ============================================================
-     * COPY PLOTLY RESTYLE
-     * ============================================================
-     *
-     * Some interactive Plotly controls use restyle rather than
-     * relayout.
-     */
-
-    function copyRestyle(
+    function synchronizeDelta(
       sourceFrame,
-      targetFrame,
-      data,
-      indices
+      deltaLabel
     ) {
 
-      if (isSynchronizing) {
+      if (syncingDelta) {
         return;
       }
 
-      if (!data) {
+      const targetFrame =
+        getOtherFrame(sourceFrame);
+
+      if (!targetFrame) {
         return;
       }
 
-      const targetGraph =
-        getPlotlyGraph(targetFrame);
+      /*
+       * Both reports use the same δ values, so use the
+       * label itself as the synchronization key.
+       *
+       * This means δ = 7.0 in one figure selects δ = 7.0
+       * in the other figure.
+       */
 
-      if (!targetGraph) {
-        return;
-      }
+      state.delta =
+        String(deltaLabel);
 
-      const targetPlotly =
-        targetFrame.contentWindow.Plotly;
-
-      if (!targetPlotly) {
-        return;
-      }
-
-      isSynchronizing = true;
+      syncingDelta = true;
 
       try {
 
-        targetPlotly.restyle(
-          targetGraph,
-          data,
-          indices
+        applyDeltaToFrame(
+          targetFrame,
+          state.delta
         );
 
-      } catch (error) {
+      } finally {
 
-        console.warn(
-          "Plotly restyle synchronization failed:",
-          error
-        );
+        /*
+         * Do not release the lock immediately. The target
+         * Plotly update can itself emit slider events.
+         */
+
+        setTimeout(() => {
+          syncingDelta = false;
+        }, 150);
 
       }
-
-      setTimeout(() => {
-        isSynchronizing = false;
-      }, 100);
 
     }
 
 
     /*
      * ============================================================
-     * ATTACH PLOTLY EVENT LISTENERS
+     * ATTACH SLIDER EVENT
      * ============================================================
      */
 
-    function attachPlotlySynchronization(
-      sourceFrame,
-      targetFrame
+    function attachDeltaListener(
+      frame
     ) {
 
       const graph =
-        getPlotlyGraph(sourceFrame);
+        getPlotlyGraph(frame);
 
       if (!graph) {
         return false;
       }
 
-      /*
-       * Avoid attaching listeners multiple times.
-       */
-
-      if (graph.__deltaSyncAttached) {
+      if (graph.__sharedDeltaListener) {
         return true;
       }
 
-      graph.__deltaSyncAttached = true;
+      graph.__sharedDeltaListener = true;
 
 
       /*
-       * Dragging shapes / delta markers / axes.
+       * THIS is the important Plotly event.
+       *
+       * Your report's delta is a Plotly slider, and Plotly
+       * exposes its change through plotly_sliderchange.
        */
 
-      if (
-        typeof graph.on === "function"
-      ) {
+      graph.on(
+        "plotly_sliderchange",
+        function(eventData) {
 
-        graph.on(
-          "plotly_relayout",
-          function(eventData) {
-
-            copyRelayout(
-              sourceFrame,
-              targetFrame,
-              eventData
-            );
-
+          if (syncingDelta) {
+            return;
           }
-        );
 
-
-        /*
-         * Controls that modify trace properties.
-         */
-
-        graph.on(
-          "plotly_restyle",
-          function(data, indices) {
-
-            copyRestyle(
-              sourceFrame,
-              targetFrame,
-              data,
-              indices
-            );
-
+          if (
+            !eventData ||
+            !eventData.step
+          ) {
+            return;
           }
-        );
 
+          const deltaLabel =
+            eventData.step.label;
 
-        /*
-         * A generic update event can occur for some Plotly
-         * controls. We don't copy it blindly because its payload
-         * can differ between Plotly versions.
-         */
-        graph.on(
-          "plotly_update",
-          function() {
+          synchronizeDelta(
+            frame,
+            deltaLabel
+          );
 
-            /*
-             * Usually the actual change has already generated
-             * relayout/restyle above.
-             */
-          }
-        );
+        }
+      );
 
-      }
 
       return true;
+
     }
 
 
     /*
      * ============================================================
-     * WAIT UNTIL PLOTLY EXISTS
+     * WAIT FOR PLOTLY
      * ============================================================
-     *
-     * Plotly HTML files often load Plotly asynchronously.
-     * Therefore attaching the listener immediately on iframe
-     * load isn't reliable.
      */
 
     function waitForPlotly(
-      sourceFrame,
-      targetFrame,
-      attemptsLeft = 50
+      frame,
+      attempts = 100
     ) {
 
-      if (attemptsLeft <= 0) {
+      if (attempts <= 0) {
 
         console.warn(
-          "Could not find Plotly graph for synchronization."
+          "Could not attach delta synchronization to iframe."
         );
 
         return;
+
       }
 
-      try {
+      const graph =
+        getPlotlyGraph(frame);
 
-        const graph =
-          getPlotlyGraph(sourceFrame);
+      const plotly =
+        frame.contentWindow.Plotly;
 
-        const plotly =
-          sourceFrame.contentWindow.Plotly;
+      if (
+        graph &&
+        plotly &&
+        typeof graph.on === "function"
+      ) {
 
-        if (
-          graph &&
-          plotly &&
-          typeof graph.on === "function"
-        ) {
+        attachDeltaListener(frame);
 
-          attachPlotlySynchronization(
-            sourceFrame,
-            targetFrame
-          );
+        /*
+         * Keep the iframe fitted after Plotly has finished
+         * rendering.
+         */
 
-          return;
-        }
+        return;
 
-      } catch (error) {
-        // Continue polling.
       }
 
       setTimeout(
         () => {
 
           waitForPlotly(
-            sourceFrame,
-            targetFrame,
-            attemptsLeft - 1
+            frame,
+            attempts - 1
           );
 
         },
@@ -771,108 +790,53 @@
 
     /*
      * ============================================================
-     * IFRAME LOAD SETUP
+     * IFRAME LOAD EVENTS
      * ============================================================
      */
 
     function setupIframe(
-      iframe,
-      shell,
-      otherFrame
+      frame,
+      shell
     ) {
 
-      iframe.addEventListener(
+      frame.addEventListener(
         "load",
         () => {
 
-          /*
-           * Fit the figure.
-           */
-
           fitIframe(
-            iframe,
+            frame,
             shell
           );
 
-          setTimeout(() => {
-            fitIframe(
-              iframe,
+          setTimeout(
+            () => fitIframe(
+              frame,
               shell
-            );
-          }, 100);
-
-          setTimeout(() => {
-            fitIframe(
-              iframe,
-              shell
-            );
-          }, 500);
-
-          setTimeout(() => {
-            fitIframe(
-              iframe,
-              shell
-            );
-          }, 1000);
-
-
-          /*
-           * Most important part:
-           *
-           * Wait until the embedded Plotly graph exists,
-           * then connect its interactive events to the other
-           * figure.
-           */
-
-          waitForPlotly(
-            iframe,
-            otherFrame
+            ),
+            100
           );
 
+          setTimeout(
+            () => fitIframe(
+              frame,
+              shell
+            ),
+            500
+          );
+
+          setTimeout(
+            () => fitIframe(
+              frame,
+              shell
+            ),
+            1000
+          );
 
           /*
-           * Keep the iframe height synchronized with its
-           * internal document.
+           * Wait until the embedded Plotly graph exists.
            */
 
-          try {
-
-            const doc =
-              iframe.contentWindow.document;
-
-            if (
-              doc.body &&
-              doc.documentElement &&
-              typeof ResizeObserver !== "undefined"
-            ) {
-
-              const observer =
-                new ResizeObserver(() => {
-
-                  fitIframe(
-                    iframe,
-                    shell
-                  );
-
-                });
-
-              observer.observe(
-                doc.body
-              );
-
-              observer.observe(
-                doc.documentElement
-              );
-            }
-
-          } catch (error) {
-
-            console.warn(
-              "Could not attach iframe ResizeObserver:",
-              error
-            );
-
-          }
+          waitForPlotly(frame);
 
         }
       );
@@ -882,11 +846,11 @@
 
     /*
      * ============================================================
-     * LOAD / CHANGE SCENARIO
+     * LOAD REPORTS
      * ============================================================
      */
 
-    function updateUI() {
+    function updateReports() {
 
       const selected =
         REPORTS[
@@ -897,8 +861,7 @@
 
 
       /*
-       * Both figures are always changed together when the
-       * scenario buttons are changed.
+       * Load the original report HTML files.
        */
 
       weltonFrame.src =
@@ -907,106 +870,88 @@
       diaFrame.src =
         selected.dia;
 
-
-      /*
-       * Titles.
-       */
-
-      weltonTitle.textContent =
-        "Access to Five Points";
-
-      diaTitle.textContent =
-        "Access to DIA";
-
-
-      /*
-       * Buttons.
-       */
-
-      lineButtons.forEach(button => {
-
-        button.classList.toggle(
-          "active",
-          button.dataset.line === state.line
-        );
-
-      });
-
-      improvementButtons.forEach(button => {
-
-        button.classList.toggle(
-          "active",
-          button.dataset.improvement ===
-          state.improvement
-        );
-
-      });
-
     }
 
 
     /*
      * ============================================================
-     * SCENARIO BUTTONS
+     * BUTTONS
      * ============================================================
      */
 
-    lineButtons.forEach(button => {
+    function updateButtonStates() {
 
-      button.addEventListener(
-        "click",
-        () => {
+      lineButtons.forEach(
+        button => {
 
-          state.line =
-            button.dataset.line;
-
-          updateUI();
+          button.classList.toggle(
+            "active",
+            button.dataset.line ===
+            state.line
+          );
 
         }
       );
 
-    });
 
+      improvementButtons.forEach(
+        button => {
 
-    improvementButtons.forEach(button => {
-
-      button.addEventListener(
-        "click",
-        () => {
-
-          state.improvement =
-            button.dataset.improvement;
-
-          updateUI();
+          button.classList.toggle(
+            "active",
+            button.dataset.improvement ===
+            state.improvement
+          );
 
         }
       );
 
-    });
+    }
+
+
+    lineButtons.forEach(
+      button => {
+
+        button.addEventListener(
+          "click",
+          () => {
+
+            state.line =
+              button.dataset.line;
+
+            updateButtonStates();
+            updateReports();
+
+          }
+        );
+
+      }
+    );
+
+
+    improvementButtons.forEach(
+      button => {
+
+        button.addEventListener(
+          "click",
+          () => {
+
+            state.improvement =
+              button.dataset.improvement;
+
+            updateButtonStates();
+            updateReports();
+
+          }
+        );
+
+      }
+    );
 
 
     /*
      * ============================================================
-     * SET UP IFRAME LISTENERS
-     * ============================================================
-     */
-
-    setupIframe(
-      weltonFrame,
-      weltonShell,
-      diaFrame
-    );
-
-    setupIframe(
-      diaFrame,
-      diaShell,
-      weltonFrame
-    );
-
-
-    /*
-     * ============================================================
-     * WINDOW RESIZE
+     * RESIZE
      * ============================================================
      */
 
@@ -1030,11 +975,23 @@
 
     /*
      * ============================================================
-     * INITIAL LOAD
+     * START
      * ============================================================
      */
 
-    updateUI();
+    setupIframe(
+      weltonFrame,
+      weltonShell
+    );
+
+    setupIframe(
+      diaFrame,
+      diaShell
+    );
+
+    updateButtonStates();
+
+    updateReports();
 
   </script>
 
