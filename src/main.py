@@ -55,6 +55,8 @@ if __name__ == '__main__':
     origin_destination_pairs = [
         ('27th & Welton', 'Union Station'),
         ('Union Station', '27th & Welton'),
+        ('27th & Welton', 'I-25 & Broadway'),
+        ('I-25 & Broadway', '27th & Welton'),
         ('27th & Welton', '38th & Blake'),
         ('38th & Blake', '27th & Welton'),
         ('27th & Welton', 'DIA'),
@@ -79,6 +81,7 @@ if __name__ == '__main__':
 
     for kappa, delta in kappa_delta_pairs:
 
+        print(f"gtfs_dir: {gtfs_dir}")
         print(f"kappa: {kappa}, delta: {delta}")
         print("     ... Generating OTP")
 

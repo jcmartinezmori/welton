@@ -257,6 +257,7 @@ if __name__ == "__main__":
         fig_name = 'welton'
         columns = [
             (("27th & Welton", "38th & Blake"), ("38th & Blake", "27th & Welton")),
+            (("27th & Welton", "I-25 & Broadway"), ("I-25 & Broadway", "27th & Welton")),
             (("27th & Welton", "Union Station"), ("Union Station", "27th & Welton")),
             (("27th & Welton", "DIA"), ("DIA", "27th & Welton"))
         ]
@@ -304,5 +305,5 @@ if __name__ == "__main__":
             kappa=1,
             query_start='15:00:00',
             query_end='18:00:00',
-            y_max=90
+            y_max=120
         )
